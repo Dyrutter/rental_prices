@@ -1,0 +1,54 @@
+main:
+  download_repository: "https://github.com/DyRutter/rental_prices#download" # Project repository
+  project_name: rental_prices
+  experiment_name: development
+  execute_steps: # MLflow steps
+    - download
+    - basic_cleaning 
+    - check_data
+    - segregate
+    - random_forest
+    - test_regression_model
+    - EDA
+  random_seed: 42
+data:
+  file_url: "https://github.com/Dyrutter/rental_prices/blob/main/data/sample1.csv?raw=True" 
+  reference_dataset: "nyc_airbnb/preprocessed_data.csv:latest"
+  raw_data_name: "raw_data.csv" # Name of raw artifact
+  raw_data_type: "raw_data"
+  raw_data_description: "Raw file as downloaded"
+  raw_data_artifact: "raw_data.csv:latest" 
+  preprocessed_data: "preprocessed_data.csv" # Name of preprocessed artifact
+  preprocessed_data_latest: "preprocessed_data.csv:latest"
+  sample: "sample1.csv"  # Name of data file
+  eda_sample: "sample1.csv"
+  train_data: "data_train.csv:latest" # Name of trained data artifact
+  test_data: "data_test.csv:latest" # Name of test data artifact
+  kl_threshold: 0.05
+  test_size: 0.2
+  val_size: 0.2
+  stratify_by: neighbourhood_group
+  stratify: neighbourhood_group
+  min_price: 10
+  max_price: 351
+random_forest_pipeline:
+  random_forest:
+    n_estimators: 100
+    criterion: 'absolute_error'
+    max_depth: 13
+    min_samples_split: 4
+    min_samples_leaf: 3
+    min_weight_fraction_leaf: 0.0
+    max_features: 0.5 #'sqrt'
+    max_leaf_nodes: null
+    bootstrap: true
+    oob_score: true
+    n_jobs: -1
+    random_state: 42
+    verbose: 0
+    warm_start: false
+    ccp_alpha: 0.0
+    max_samples: null
+  max_tfidf_features: 5
+  output_artifact: "model_export"
+  export_artifact: "model_export"
