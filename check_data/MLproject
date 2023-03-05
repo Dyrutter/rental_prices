@@ -1,0 +1,29 @@
+name: nyc_prices
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      reference_artifact:
+        description: Fully-qualitied name for the artifact to be used as reference dataset
+        type: str
+      sample_artifact:
+        description: Fully-qualitied name for the artifact to be used as new data sample
+        type: str
+      kl_threshold:
+        description: Threshold for the KL divergence test on the neighborhood group column
+        type: float
+      min_price:
+        description: Minimum accepted price
+        type: float
+      max_price:
+        description: Maximum accepted price
+        type: float
+    # NOTE: the -s flag is necessary, otherwise pytest will capture all the output and it
+    # will not be uploaded to W&B. Hence, the log in W&B will be empty.
+    command: >-
+      pytest -s -vv . --reference_artifact {reference_artifact} \
+                      --sample_artifact {sample_artifact} \
+                      --kl_threshold {kl_threshold} \
+                      --min_price {min_price} \
+                      --max_price {max_price}
