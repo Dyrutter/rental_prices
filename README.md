@@ -38,18 +38,24 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + A new data sample (new_sample.csv) can be input using `mlflow run https://github.com/DyRutter/rental_prices.git -v 1.0.2 -P
     hydra_options="data.sample='new_sample.csv'"`
     
-## [download_data.py (download directory)](./download/download_data.py)
+## [download_data.py (download component)](./download/download_data.py)
 + Gets data from url specified in [hydra config file](./config/config.yaml)
 + Converts data into a Weights & Biases artifact
 + Uploads the artifact to Weights & Biases
 
-## [Basic Cleaning run.py](./basic_cleaning/run.py)
+## [run.py (basic cleaning component)](./basic_cleaning/run.py)
 + Gets raw data artifact (created in download component) from Weights & Biases
 + Drops duplicates
 + Drops price outliers according to min and max specified in [hydra config file](./config/config.yaml)
 + Converts dates to datetime format using Pandas
 + Creates cleaned data csv file 
-+ Converts cleaned data file into an artifact and uploads it to Weights and Biases 
++ Converts cleaned data file into an artifact and uploads it to Weights and Biases
+
+## [test_data.py (check data component)](./check_data/test_data.py)
++ In conjunction with [conftest.py](./check_data/conftest.py), asserts data integrity using Pytest
++ Confirms column names, neighborhood names, and row counts are as expected
++ Asserts latitude and longitude boundaries are within the expected values for NYC
++ Confirms price ranges are between the min and max values specified in [hydra config file](./config/config.yaml)
     
     
     
