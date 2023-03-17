@@ -24,4 +24,16 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 ## DEPENDENCIES
 + Install requirements found in [requirements](./requirements.txt)
 + A python 3.10 `conda` virtual environment
-+ Note: This project was created using MacOS Monterey  
++ Note: This project was created using MacOS Monterey
+
+# PRIMARY FILES
+
+## [main.py (Root Directory)](./main.py)
++ Defines each MLFLow component
++ Specifies hyperparameters for each component using argparse in conjunction with [Hydra](https://hydra.cc/docs/intro/)
++ Specifies input and output Weights & Biases artifacts
++ From root directory, can be run locally with command `mlflow run .`
++ Specific components (e.g. "download") can be run locally with `mlflow run . -P hydra_options="main.execute_steps='download'"`
++ Can be run on GitHub using command `mlflow run https://github.com/DyRutter/rental_prices.git -v 1.0.2` 
++ A new data sample (new_sample.csv) can be input using `mlflow run https://github.com/DyRutter/rental_prices.git -v 1.0.2 -P
+    hydra_options="data.sample='new_sample.csv'"`
