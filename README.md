@@ -57,5 +57,7 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Asserts latitude and longitude boundaries are within the expected values for NYC
 + Confirms price ranges are between the min and max values specified in [hydra config file](./config/config.yaml)
     
-    
+## [EDA.ipynb (EDA component)](./EDA/EDA.ipynb)
++ Downloads raw data artifact from Weights and Biases
++ Runs y data profiling (formerly pandas_profiling) analysis
     
