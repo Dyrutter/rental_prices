@@ -42,6 +42,14 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Gets data from url specified in [hydra config file](./config/config.yaml)
 + Converts data into a Weights & Biases artifact
 + Uploads the artifact to Weights & Biases
+
+## [Basic Cleaning run.py](./basic_cleaning/run.py)
++ Gets raw data artifact (created in download component) from Weights & Biases
++ Drops duplicates
++ Drops price outliers according to min and max specified in [hydra config file](./config/config.yaml)
++ Converts dates to datetime format using Pandas
++ Creates cleaned data csv file 
++ Converts cleaned data file into an artifact and uploads it to Weights and Biases 
     
     
     
