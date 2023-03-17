@@ -37,3 +37,11 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Can be run on GitHub using command `mlflow run https://github.com/DyRutter/rental_prices.git -v 1.0.2` 
 + A new data sample (new_sample.csv) can be input using `mlflow run https://github.com/DyRutter/rental_prices.git -v 1.0.2 -P
     hydra_options="data.sample='new_sample.csv'"`
+    
+## [download_data.py (download directory)](./download/download_data.py)
++ Gets data from url specified in [hydra config file](./config/config.yaml)
++ Converts data into a Weights & Biases artifact
++ Uploads the artifact to Weights & Biases
+    
+    
+    
