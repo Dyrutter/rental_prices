@@ -69,3 +69,8 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Fits data to a random forest inference pipeline
 + Creates a scikit-learn chart of feature importances
 + Uploads model as an artifact to Weights and Biases
+
+## [run.py (test_regression_model component)](./test_regression_model/run.py)
++ Retrieves model artifact from Weights and Biases
++ Calculates R squared score and mean absolute error
++ Uploads scores to Weights and Biases
