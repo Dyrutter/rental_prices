@@ -13,7 +13,7 @@ The pipeline has 7 components:
 + Test the model's performance
 
 Each component can be run independently, assuming its previous component(s) have been run at least once.
-The integrity of each upload is confirmed through GitHub Actions via Pytest and flake8
+The integrity of each commit is confirmed through GitHub Actions via Pytest and flake8
 
 # ENVIRONMENT SETUP
 
@@ -22,11 +22,11 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Weights and Biases account, which can be created [here](https://wandb.ai/site)
 + GitHub account (for running)
 + Clone GitHub repo `https://github.com/Dyrutter/rental_prices.git`
++ A python 3.10 `conda` virtual environment
 
 ## DEPENDENCIES
 
-+ Install requirements found in [requirements](./requirements.txt)
-+ A python 3.10 `conda` virtual environment
++ Install requirements found in [requirements.txt file](./requirements.txt)
 + Note: This project was created using MacOS Monterey
 
 # PRIMARY FILES
@@ -77,6 +77,11 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Retrieves model artifact from Weights and Biases
 + Calculates R squared score and mean absolute error
 + Uploads scores to Weights and Biases
+
+### [config.yaml](./config/config.yaml)
++ Primary Hydra configuration file
++ Specifies data to use and components to execute
++ Contains customization options for the random forest model
 
 ### OTHER FILES
 + A conda.yaml dependencies file exists in each component for use by MLFlow
