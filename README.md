@@ -65,3 +65,7 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Splits data into train and test sets
 + Uploads data sets as artifacts to Weights and Biases
 
+## [run.py (random_forest component)](./random_forest/run.py)
++ Fits data to a random forest inference pipeline
++ Creates a scikit-learn chart of feature importances
++ Uploads model as an artifact to Weights and Biases
