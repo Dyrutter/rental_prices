@@ -22,6 +22,7 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Clone GitHub repo `https://github.com/Dyrutter/rental_prices.git`
 
 ## DEPENDENCIES
+
 + Install requirements found in [requirements](./requirements.txt)
 + A python 3.10 `conda` virtual environment
 + Note: This project was created using MacOS Monterey
@@ -75,6 +76,14 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Calculates R squared score and mean absolute error
 + Uploads scores to Weights and Biases
 
-## OTHER FILES
+### OTHER FILES
 + A conda.yaml dependencies file exists in each component for use by MLFlow
 + An MLproject configuration file exists in each component for use by MLFLow
+
+# ADDITIONAL RESOURCES
+
++ [Create Reusable ML Modules with MLflow Projects & Docker](https://towardsdatascience.com/create-reusable-ml-modules-with-mlflow-projects-docker-33cd722c93c4)
++ [MLOps-Reducing the technical debt of Machine Learning](https://medium.com/mlops-community/mlops-reducing-the-technical-debt-of-machine-learning-dac528ef39de)
++ [MLOps Core](https://ml-ops.org/content/references.html)
++ [MLOps: From a Data Scientist's Perspective](https://neptune.ai/blog/mlops)
++ [Choosing the Right Metric For Evaluating ML Models](https://www.kaggle.com/code/vipulgandhi/how-to-choose-right-metric-for-evaluating-ml-model/notebook)
