@@ -74,3 +74,7 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 + Retrieves model artifact from Weights and Biases
 + Calculates R squared score and mean absolute error
 + Uploads scores to Weights and Biases
+
+## OTHER FILES
++ A conda.yaml dependencies file exists in each component for use by MLFlow
++ An MLproject configuration file exists in each component for use by MLFLow
