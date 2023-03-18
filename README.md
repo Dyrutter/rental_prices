@@ -60,4 +60,8 @@ The integrity of each upload is confirmed through GitHub Actions via Pytest and 
 ## [EDA.ipynb (EDA component)](./EDA/EDA.ipynb)
 + Downloads raw data artifact from Weights and Biases
 + Runs y data profiling (formerly pandas_profiling) analysis
-    
+
+## [run.py (segregate component)](./segregate/run.py)
++ Splits data into train and test sets
++ Uploads data sets as artifacts to Weights and Biases
+
