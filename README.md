@@ -94,3 +94,9 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + [MLOps Core](https://ml-ops.org/content/references.html)
 + [MLOps: From a Data Scientist's Perspective](https://neptune.ai/blog/mlops)
 + [Choosing the Right Metric For Evaluating ML Models](https://www.kaggle.com/code/vipulgandhi/how-to-choose-right-metric-for-evaluating-ml-model/notebook)
+
+
+# Suggestions
++ In the data exploration step, you can go far beyond what is shown here, such as including visualizations and other data cleaning steps. This should allow you to get even better performance from the model.
++ Explore other models beyond the RandomForest trained here, creating a new separate step or customizing the random forest one to accommodate different types of models.
++ Add discussion to a README file concerning other changes you might consider in future releases of your pipeline.
