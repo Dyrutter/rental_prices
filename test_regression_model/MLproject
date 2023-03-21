@@ -1,0 +1,15 @@
+name: test_regression_model
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      mlflow_model:
+        description: Fully-qualified artifact name for the exported model to evaluate
+        type: str
+      test_dataset:
+        description: Fully-qualified artifact name for the test data
+        type: str
+    command: >-
+      python run.py --mlflow_model {mlflow_model} \
+                    --test_dataset {test_dataset}
