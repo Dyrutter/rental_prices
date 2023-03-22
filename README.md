@@ -48,11 +48,10 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 
 ### [run.py (basic cleaning component)](./basic_cleaning/run.py)
 + Gets raw data artifact (created in download component) from Weights & Biases
-+ Drops duplicates
++ Imputes missing values, encodes categorical variables, and drops duplicates
 + Drops price outliers according to min and max specified in [hydra config file](./config/config.yaml)
-+ Converts dates to datetime format using Pandas
-+ Creates cleaned data csv file 
-+ Converts cleaned data file into an artifact and uploads it to Weights and Biases
++ Engineers dates to date feature 
++ Creates cleaned data csv file and uploads it to Weights & Biases
 
 ### [test_data.py (check data component)](./check_data/test_data.py)
 + In conjunction with [conftest.py](./check_data/conftest.py), asserts data integrity using Pytest
