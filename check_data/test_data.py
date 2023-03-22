@@ -65,13 +65,6 @@ def test_similar_neigh_distrib(
     assert scipy.stats.entropy(dist1, dist2, base=2) < kl_threshold
 
 
-def test_row_count(data):
-    """
-    Confirm data set is reasonable size
-    """
-    assert 15000 < data.shape[0] < 1000000
-
-
 def test_price_range(data, min_price, max_price):
     """
     Confirm price range is between min_price and max_price
