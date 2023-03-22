@@ -1,41 +1,122 @@
 import argparse
 import logging
 import os
-
 import pandas as pd
 import wandb
-
+import numpy as np
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OrdinalEncoder
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
 
 
-def go(args):
+def engineer_dates(data_frame):
+    """
+    Convert date column to feature that represents the number of days passed
+    since the last review.
+    Impute missing date values from an old date, because there hasn't been a
+    review for a long time
+    """
+    # Instantiate imputer & reshape date column for compatability
+    date_imputer = SimpleImputer(strategy='constant', fill_value='2010-01-01')
+    date_column = np.array(data_frame['last_review']).reshape(-1, 1)
 
-    run = wandb.init(job_type="process_data")
+    # Impute dates and convert to datetime
+    dates_imputed = date_imputer.fit_transform(date_column)
+    dates_df = pd.DataFrame(dates_imputed).apply(pd.to_datetime)
 
-    logger.info("Downloading artifact")
-    artifact = run.use_artifact(args.input_artifact,
-                                type='raw_data')
-    artifact_path = artifact.file()
-    df = pd.read_csv(artifact_path, low_memory=False)
+    # Convert datetime days to ints & get the distance between them
+    dates_df = dates_df.apply(lambda d: (d.max() - d).dt.days, axis=0)
+    data_frame['last_review'] = dates_df
+    return data_frame
 
-    # Drop the duplicates
-    logger.info("Dropping duplicates")
+
+def encode_room_type(data_frame):
+    """
+    Use an ordianl encoder, because order is meaningful in room type:
+    'Entire home/apt' > 'Private room' > 'Shared room'
+    Note: Don't need to impute, because mandatory on website input
+    """
+    encoder = OrdinalEncoder()
+    room_type = np.array(data_frame['room_type']).reshape(-1, 1)
+    encoded = encoder.fit_transform(room_type)
+    data_frame['room_type'] = encoded
+    return data_frame
+
+
+def encode_group(data_frame):
+    """
+    Encode the categorical feature 'neighbourhood_group'
+    No need to impute, because it was a required input
+    """
+    data_frame['neighbourhood_group'] =\
+        data_frame['neighbourhood_group'].astype('category')
+    data_frame['neighbourhood_group'] =\
+        data_frame['neighbourhood_group'].cat.codes
+    return data_frame
+
+
+def impute_text(data_frame):
+    """
+    Impute missing values in "name" and "host_name" columns
+    """
+    # Instantiate imputers
+    name_imputer = SimpleImputer(strategy="constant", fill_value="")
+    host_imputer = SimpleImputer(strategy="constant", fill_value="")
+
+    # Impute "name" column
+    name_column = np.array(data_frame['name']).reshape(-1, 1)
+    names_imputed = name_imputer.fit_transform(name_column)
+    data_frame['name'] = names_imputed
+
+    # Impute "host_name" column
+    host_column = np.array(data_frame['host_name']).reshape(-1, 1)
+    hosts_imputed = host_imputer.fit_transform(host_column)
+    data_frame['host_name'] = hosts_imputed
+    return data_frame
+
+
+def drop_useless(df):
+    """
+    Drop duplicates, price outliers, "id" & "host_id" columns, and all
+    latitudes and longitudes not in NYC
+    """
+    # Drop duplicates, outliers, and useless columns
     df = df.drop_duplicates().reset_index(drop=True)
-
-    logger.info("Dropping outliers")
-    print(list(df.columns))
     idx = df['price'].between(args.min_price, args.max_price)
     df = df[idx].copy()
-    # Convert last_review to datetime
-    df['last_review'] = pd.to_datetime(df['last_review'])
-    filename = args.output_name  # "preprocessed_data.csv"
+    df = df.drop(['id', 'host_id'], axis=1)
 
+    # Drop lats and longs not in NYC
     idx = df['longitude'].between(-74.25, -73.50) &\
         df['latitude'].between(40.5, 41.2)
     df = df[idx].copy()
+    return df
+
+
+def go(args):
+
+    # Initialize run and get raw data file
+    run = wandb.init(job_type="process_data")
+    logger.info("Downloading artifact")
+    artifact = run.use_artifact(args.input_artifact, type='raw_data')
+    artifact_path = artifact.file()
+    df = pd.read_csv(artifact_path, low_memory=False)
+
+    # Impute missing values, encode categoricals, & engineer dates
+    logger.info("Imputing missing values, encoding, and engineering dates")
+    df = engineer_dates(df)
+    df = encode_room_type(df)
+    df = encode_group(df)
+    df = impute_text(df)
+
+    # Drop useless features
+    logger.info("Dropping duplicates, outliers, and useless features")
+    df = drop_useless(df)
+
+    filename = args.output_name  # "preprocessed_data.csv"
     df.to_csv(args.output_name, index=False)  # added index=False
 
     artifact = wandb.Artifact(
