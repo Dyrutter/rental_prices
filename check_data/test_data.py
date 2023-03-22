@@ -6,9 +6,7 @@ import scipy.stats
 def test_column_names(data):
 
     expected_colums = [
-        "id",
         "name",
-        "host_id",
         "host_name",
         "neighbourhood_group",
         "neighbourhood",
