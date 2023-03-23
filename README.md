@@ -46,6 +46,11 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + Converts data into a Weights & Biases artifact
 + Uploads the artifact to Weights & Biases
 
+### [test_raw_data.py (Test Raw Data component)](./test_raw_data/test_raw.py)
++ In conjunction with [conftest.py](./test_raw_data/conftest.py), confirm the integrity of raw input data using Pytest
++ Confirms the input raw data has correct column names
++ Confirms neighbourhood names and room types are within the expected values
+
 ### [run.py (basic cleaning component)](./basic_cleaning/run.py)
 + Gets raw data artifact (created in download component) from Weights & Biases
 + Imputes missing values, encodes categorical variables, and drops duplicates
