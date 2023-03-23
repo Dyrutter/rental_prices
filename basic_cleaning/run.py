@@ -103,9 +103,10 @@ def drop_useless(df):
     df = df[idx].copy()
     return df
 
+
 def impute_numerics(df):
     """
-    Impute missing values in numeric columns "minimum_nights", 
+    Impute missing values in numeric columns "minimum_nights",
     "number_of_reviews", "reviews_per_month",
     "calculated_host_listings_count", "availability_365", "longitude", and
     "latitude"
