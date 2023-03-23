@@ -59,10 +59,10 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + Creates cleaned data csv file and uploads it to Weights & Biases
 
 ### [test_data.py (check data component)](./check_data/test_data.py)
-+ In conjunction with [conftest.py](./check_data/conftest.py), asserts data integrity using Pytest
-+ Confirms column names, neighborhood names, and row counts are as expected
++ (./check_data/conftest.py), confirms preprocessing step was successful using Pytest
 + Asserts latitude and longitude boundaries are within the expected values for NYC
 + Confirms price ranges are between the min and max values specified in [hydra config file](./config/config.yaml)
++ Assesses KL divergence to confirm values aren't too dissimilar
     
 ### [EDA.ipynb (EDA component)](./EDA/EDA.ipynb)
 + Downloads raw data artifact from Weights and Biases
