@@ -1,9 +1,11 @@
 main:
-  download_repository: "https://github.com/DyRutter/rental_prices#download" # Project repository
+  download_repository: "https://github.com/Dyrutter/rental_prices#download" 
+  #src_repository: "https://github.com/udacity/build-ml-pipeline-for-short-term-rental-prices#src" 
   project_name: rental_prices
   experiment_name: development
-  execute_steps: # MLflow steps
+  execute_steps:
     - download
+    - test_raw_data
     - basic_cleaning 
     - check_data
     - segregate
@@ -12,25 +14,26 @@ main:
     - EDA
   random_seed: 42
 data:
-  file_url: "https://github.com/Dyrutter/rental_prices/blob/main/data/sample1.csv?raw=True" 
-  reference_dataset: "nyc_airbnb/preprocessed_data.csv:latest"
-  raw_data_name: "raw_data.csv" # Name of raw artifact
+  file_url: "https://github.com/Dyrutter/rental_prices/blob/main/data/sample1.csv?raw=True" # Path to data file
+  reference_dataset: "rental_prices/preprocessed_data.csv:latest"
+  raw_data_name: "raw_data.csv"
   raw_data_type: "raw_data"
   raw_data_description: "Raw file as downloaded"
-  raw_data_artifact: "raw_data.csv:latest" 
-  preprocessed_data: "preprocessed_data.csv" # Name of preprocessed artifact
+  raw_data_artifact: "raw_data.csv:latest"
+  preprocessed_data: "preprocessed_data.csv"
+  engineered_data: "engineered_data.csv"
   preprocessed_data_latest: "preprocessed_data.csv:latest"
-  sample: "sample1.csv"  # Name of data file
+  sample: "sample1.csv" 
   eda_sample: "sample1.csv"
-  train_data: "data_train.csv:latest" # Name of trained data artifact
-  test_data: "data_test.csv:latest" # Name of test data artifact
+  train_data: "data_train.csv:latest"
+  test_data: "data_test.csv:latest"
   kl_threshold: 0.05
   test_size: 0.2
   val_size: 0.2
   stratify_by: neighbourhood_group
   stratify: neighbourhood_group
   min_price: 10
-  max_price: 351
+  max_price: 1000
 random_forest_pipeline:
   random_forest:
     n_estimators: 100
