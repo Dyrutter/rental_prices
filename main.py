@@ -44,12 +44,18 @@ def go(config: DictConfig):
                     "artifact_description": config["data"]
                     ["raw_data_description"]})
 
+    if "test_raw_data" in steps_to_execute:
+        _ = mlflow.run(
+            os.path.join(root_path, "test_raw_data"),
+            entry_point="main",
+            parameters={
+                "downloaded_raw_data": config["data"]["raw_data_artifact"]})
+
     if "basic_cleaning" in steps_to_execute:
         _ = mlflow.run(
             os.path.join(root_path, "basic_cleaning"),
             entry_point="main",
             parameters={
-                # "raw_data.csv:latest",
                 "input_artifact": config["data"]["raw_data_artifact"],
                 "output_name": config["data"]["preprocessed_data"],
                 "output_type": "preprocessed_data",
@@ -63,11 +69,20 @@ def go(config: DictConfig):
             entry_point="main",
             parameters={
                 "reference_artifact": config["data"]["reference_dataset"],
-                # "preprocessed_data.csv:latest",
                 "sample_artifact": config["data"]["preprocessed_data_latest"],
                 "kl_threshold": config["data"]["kl_threshold"],
                 "min_price": config["data"]["min_price"],
                 "max_price": config["data"]["max_price"]})
+
+    ##
+    if "engineer" in steps_to_execute:
+        _ = mlflow.run(
+            os.path.join(root_path, "engineer"),
+            entry_point="main",
+            parameters={
+                "input_artifact": config["data"]["preprocessed_data"],
+                "output_artifact": config["data"]["engineered_data"]
+            })
 
     # if "EDA" in steps_to_execute:
     #   _ = mlflow.run(
@@ -101,17 +116,16 @@ def go(config: DictConfig):
             os.path.join(root_path, "random_forest"),
             entry_point="main",
             parameters={
-                # "data_train.csv:latest",
                 "trainval_artifact": config["data"]["train_data"],
                 "rf_config": rf_config,
-                "output_artifact":\
+                "output_artifact":
                 config["random_forest_pipeline"]["output_artifact"],
                 "random_seed": config["main"]["random_seed"],
                 "val_size": config["data"]["test_size"],
                 "stratify_by": config["data"]["stratify_by"],
-                "max_tfidf_features":\
+                "max_tfidf_features":
                 config["random_forest_pipeline"]["max_tfidf_features"],
-                "save_locally":\
+                "save_locally":
                 config["random_forest_pipeline"]["save_locally"]})
 
     if "test_regression_model" in steps_to_execute:
@@ -121,9 +135,9 @@ def go(config: DictConfig):
                 "test_regression_model"),
             entry_point="main",
             parameters={
-             "mlflow_model":
-             f"{config['random_forest_pipeline']['output_artifact']}:latest",
-             "test_dataset": config["data"]["test_data"]})
+              "mlflow_model":
+              f"{config['random_forest_pipeline']['output_artifact']}:latest",
+              "test_dataset": config["data"]["test_data"]})
 
 
 if __name__ == "__main__":
