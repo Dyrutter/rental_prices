@@ -65,6 +65,7 @@ def impute_text(data_frame):
     # Instantiate imputers
     name_imputer = SimpleImputer(strategy="constant", fill_value="")
     host_imputer = SimpleImputer(strategy="constant", fill_value="")
+    neighbourhood_imputer = SimpleImputer(strategy="constant", fill_value="")
 
     # Impute "name" column
     name_column = np.array(data_frame['name']).reshape(-1, 1)
@@ -75,6 +76,11 @@ def impute_text(data_frame):
     host_column = np.array(data_frame['host_name']).reshape(-1, 1)
     hosts_imputed = host_imputer.fit_transform(host_column)
     data_frame['host_name'] = hosts_imputed
+
+    # Impute "neighbourhood" column
+    neigh_column = np.array(data_frame['neighbourhood']).reshape(-1, 1)
+    neighs_imputed = neighbourhood_imputer.fit_transform(neigh_column)
+    data_frame['neighbourhood'] = neighs_imputed
     return data_frame
 
 
@@ -83,16 +89,61 @@ def drop_useless(df):
     Drop duplicates, price outliers, "id" & "host_id" columns, and all
     latitudes and longitudes not in NYC
     """
-    # Drop duplicates, outliers, and useless columns
+    # Drop duplicates and outliers
     df = df.drop_duplicates().reset_index(drop=True)
     idx = df['price'].between(args.min_price, args.max_price)
     df = df[idx].copy()
+
+    # Drop 'id' and 'host_id' columns
     df = df.drop(['id', 'host_id'], axis=1)
 
     # Drop lats and longs not in NYC
     idx = df['longitude'].between(-74.25, -73.50) &\
         df['latitude'].between(40.5, 41.2)
     df = df[idx].copy()
+    return df
+
+def impute_numerics(df):
+    """
+    Impute missing values in numeric columns "minimum_nights", 
+    "number_of_reviews", "reviews_per_month",
+    "calculated_host_listings_count", "availability_365", "longitude", and
+    "latitude"
+    """
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["reviews_per_month"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["reviews_per_month"] = imputed_col
+
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["minimum_nights"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["minimum_nights"] = imputed_col
+
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["number_of_reviews"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["number_of_reviews"] = imputed_col
+
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["calculated_host_listings_count"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["calculated_host_listings_count"] = imputed_col
+
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["availability_365"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["availability_365"] = imputed_col
+
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["longitude"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["longitude"] = imputed_col
+
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["latitude"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["latitude"] = imputed_col
     return df
 
 
@@ -111,6 +162,7 @@ def go(args):
     df = encode_room_type(df)
     df = encode_group(df)
     df = impute_text(df)
+    df = impute_numerics(df)
 
     # Drop useless features
     logger.info("Dropping duplicates, outliers, and useless features")
