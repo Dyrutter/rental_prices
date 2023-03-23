@@ -1,0 +1,13 @@
+name: nyc_prices
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      downloaded_raw_data:
+        description: Fully-qualitied name for the artifact to be used as raw dataset
+        type: str
+    # NOTE: the -s flag is necessary, otherwise pytest will capture all the output and it
+    # will not be uploaded to W&B. Hence, the log in W&B will be empty.
+    command: >-
+      pytest -s -vv . --downloaded_raw_data {downloaded_raw_data}
