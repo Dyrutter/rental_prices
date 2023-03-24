@@ -23,6 +23,7 @@ data:
   preprocessed_data: "preprocessed_data.csv"
   engineered_data: "engineered_data.csv"
   preprocessed_data_latest: "preprocessed_data.csv:latest"
+  save_locally: false
   sample: "sample1.csv" 
   eda_sample: "sample1.csv"
   train_data: "data_train.csv:latest"
