@@ -1,4 +1,4 @@
-name: download_data
+name: basic_cleaning #changed from download_data
 conda_env: conda.yml
 
 entry_points:
@@ -23,6 +23,10 @@ entry_points:
       max_price:
         description: Maximum price
         type: str
+      save_locally:
+        description: Save file to local machine or not
+        type: str
+        default: False
 
     command: >-
       python run.py --input_artifact {input_artifact} \
@@ -30,4 +34,5 @@ entry_points:
                               --output_type {output_type} \
                               --output_description {output_description} \
                               --min_price {min_price} \
-                              --max_price {max_price} 
+                              --max_price {max_price} \
+                              --save_locally {save_locally}
