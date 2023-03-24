@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import wandb
 import numpy as np
+from distutils.util import strtobool
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder
 
@@ -101,9 +102,6 @@ def drop_useless(df):
     idx = df['longitude'].between(-74.25, -73.50) &\
         df['latitude'].between(40.5, 41.2)
     df = df[idx].copy()
-
-    # Drop NA rows in ['price'], the label column
-    df.dropna(subset=['price'], inplace=True)
     return df
 
 
@@ -172,6 +170,12 @@ def go(args):
     logger.info("Dropping duplicates, outliers, and useless features")
     df = drop_useless(df)
 
+    # Save data frame to a local file if desired
+    if args.save_locally:
+        df2 = df.copy()
+        local = 'finaldata.csv'
+        df2.to_csv(os.path.join(os.getcwd(), local))
+
     filename = args.output_name  # "preprocessed_data.csv"
     df.to_csv(args.output_name, index=False)  # added index=False
 
@@ -233,6 +237,16 @@ if __name__ == "__main__":
         "--max_price",
         type=float,
         help='maximum price',
+        required=True
+    )
+
+    # True values are y, yes, t, true, on and 1;
+    # False values are n, no, f, false, off and 0
+    # Will raise ValueError if input argument is not of proper type
+    parser.add_argument(
+        "--save_locally",
+        type=lambda x: bool(strtobool(x)),
+        help='Choose whether or not to save clean data frame to local file',
         required=True
     )
 
