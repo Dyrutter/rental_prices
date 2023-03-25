@@ -7,7 +7,7 @@ The pipeline has 7 components:
 + Download data
 + Clean data
 + A data integrity check using Pytest
-+ An EDA analysis, which creates an ipython notebook
++ An EDA analysis using pandas profiling, which creates an ipython notebook
 + Data Segregation (Splitting into train and test sets)
 + Create a model
 + Test the model's performance
