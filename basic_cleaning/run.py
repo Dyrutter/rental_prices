@@ -3,11 +3,35 @@ import logging
 import os
 from distutils.util import strtobool
 import pandas as pd
+import numpy as np
 import wandb
+from sklearn.impute import SimpleImputer
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
+
+
+def engineer_dates(data_frame):
+    """
+    Convert date column to feature that represents the number of days passed
+    since the last review.
+    Impute missing date values from an old date, because there hasn't been a
+    review for a long time
+    """
+    # Instantiate imputer & reshape date column for compatability
+    data_frame['last_review'] = pd.to_datetime(data_frame['last_review'])
+    date_imputer = SimpleImputer(strategy='constant', fill_value='2010-01-01')
+    date_column = np.array(data_frame['last_review']).reshape(-1, 1)
+
+    # Impute dates and convert to datetime
+    dates_imputed = date_imputer.fit_transform(date_column)
+    dates_df = pd.DataFrame(dates_imputed).apply(pd.to_datetime)
+
+    # Convert datetime days to ints & get the distance between them
+    dates_df = dates_df.apply(lambda d: (d.max() - d).dt.days, axis=0)
+    data_frame['last_review'] = dates_df
+    return data_frame
 
 
 def drop_features(df):
@@ -79,8 +103,10 @@ def go(args):
     logger.info("Dropping outliers")
     df = drop_outliers(df)
 
-    # Convert last_review to datetime
-    df['last_review'] = pd.to_datetime(df['last_review'])
+    # Change dates column
+    logger.info("Reworking dates")
+    df = engineer_dates(df)
+
     filename = args.output_name  # "preprocessed_data.csv"
 
     # Save clean df to local machine if desired
