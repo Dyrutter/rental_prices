@@ -13,7 +13,7 @@ def go(config: DictConfig):
     Run MLflow project. From main directory, download step can be run using:
     mlflow run . -P hydra_options="main.execute_steps='download'"
     Can be run in github using:
-    mlflow run https://github.com/DyRutter/rental_prices.git -v 1.0.1 -P
+    mlflow run https://github.com/DyRutter/rental_prices.git -v 1.0.3 -P
     hydra_options="data.sample='sample2.csv'"
     """
     # Setup the wandb experiment. All runs will be grouped under this name
@@ -62,7 +62,7 @@ def go(config: DictConfig):
                 "output_description": "Data with preprocessing applied",
                 "min_price": config["data"]["min_price"],
                 "max_price": config["data"]["max_price"],
-                "save_locally":config["data"]["save_locally"]})
+                "save_locally": config["data"]["save_locally"]})
 
     if "check_data" in steps_to_execute:
         _ = mlflow.run(
