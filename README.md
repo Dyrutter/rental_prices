@@ -101,6 +101,6 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 
 
 # Suggestions
-+ In the data exploration step, you can go far beyond what is shown here, such as including visualizations and other data cleaning steps. This should allow you to get even better performance from the model.
++ In the EDA include visualizations and other data cleaning steps. This should get even better performance from the model.
 + Explore other models beyond the RandomForest trained here, creating a new separate step or customizing the random forest one to accommodate different types of models.
 + Add discussion to a README file concerning other changes you might consider in future releases of your pipeline.
