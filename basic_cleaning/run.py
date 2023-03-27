@@ -64,7 +64,7 @@ def drop_outliers(df):
     Drop all latitudes and longitudes not in NYC
     """
     # Drop major outliers from minimum nights
-    idx = df['minimum_nights'].between(0, 4)
+    idx = df['minimum_nights'].between(args.min_nights, args.max_nights)
     df = df[idx].copy()
 
     # Drop major outliers from last review
@@ -173,6 +173,20 @@ if __name__ == "__main__":
         "--max_price",
         type=float,
         help='maximum price',
+        required=True
+    )
+
+    parser.add_argument(
+        "--min_nights",
+        type=int,
+        help="minimum nights lower param",
+        required=True
+    )
+
+    parser.add_argument(
+        "--max_nights",
+        type=int,
+        help="minimum nights upper param",
         required=True
     )
 
