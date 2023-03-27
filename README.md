@@ -54,7 +54,7 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 ### [run.py (basic cleaning component)](./basic_cleaning/run.py)
 + Gets raw data artifact (created in download component) from Weights & Biases
 + Drops duplicates and useless features
-+ Drops price outliers according to min and max specified in [hydra config file](./config/config.yaml)
++ Drops outliers according to min and max specified in [hydra config file](./config/config.yaml)
 + Engineers dates to date feature 
 + Creates cleaned data csv file and uploads it to Weights & Biases
 
