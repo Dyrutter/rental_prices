@@ -62,6 +62,8 @@ def go(config: DictConfig):
                 "output_description": "Data with preprocessing applied",
                 "min_price": config["data"]["min_price"],
                 "max_price": config["data"]["max_price"],
+                "min_nights": config["data"]["min_nights"],
+                "max_nights": config["data"]["max_nights"],
                 "save_locally": config["data"]["save_locally"]})
 
     if "check_data" in steps_to_execute:
