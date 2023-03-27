@@ -34,7 +34,9 @@ data:
   stratify_by: neighbourhood_group
   stratify: neighbourhood_group
   min_price: 10
-  max_price: 1000
+  max_price: 350
+  min_nights: 0
+  max_nights: 4
 random_forest_pipeline:
   random_forest:
     n_estimators: 100
