@@ -23,6 +23,12 @@ entry_points:
       max_price:
         description: Maximum price
         type: str
+      min_nights:
+        description: Minimum nights lower param
+        type: str
+      max_nights:
+        description: Minimum nights upper param
+        type: str
       save_locally:
         description: Save file to local machine or not
         type: str
@@ -35,4 +41,6 @@ entry_points:
                               --output_description {output_description} \
                               --min_price {min_price} \
                               --max_price {max_price} \
+                              --min_nights {min_nights} \
+                              --max_nights {max_nights} \
                               --save_locally {save_locally}
