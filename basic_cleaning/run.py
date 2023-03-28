@@ -20,7 +20,6 @@ def engineer_dates(data_frame):
     review for a long time
     """
     # Instantiate imputer & reshape date column for compatability
-    data_frame['last_review'] = pd.to_datetime(data_frame['last_review'])
     date_imputer = SimpleImputer(strategy='constant', fill_value='2010-01-01')
     date_column = np.array(data_frame['last_review']).reshape(-1, 1)
 
@@ -95,6 +94,10 @@ def go(args):
     artifact_path = artifact.file()
     df = pd.read_csv(artifact_path, low_memory=False)
 
+    # Change dates column
+    logger.info("Reworking dates")
+    df = engineer_dates(df)
+
     # Drop unused features, duplicates, and outliers
     logger.info("Dropping unused features")
     df = drop_features(df)
@@ -103,10 +106,6 @@ def go(args):
     logger.info("Dropping outliers")
     df = drop_outliers(df)
 
-    # Change dates column
-    logger.info("Reworking dates")
-    df = engineer_dates(df)
-
     filename = args.output_name  # "preprocessed_data.csv"
 
     # Save clean df to local machine if desired
@@ -114,6 +113,7 @@ def go(args):
         df2 = df.copy()
         local = 'finaldata.csv'
         df2.to_csv(os.path.join(os.getcwd(), local))
+    df.to_csv(args.output_name, index=False)
 
     # Create artifact and upload to wandb
     artifact = wandb.Artifact(
@@ -178,14 +178,14 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--min_nights",
-        type=int,
+        type=float,
         help="minimum nights lower param",
         required=True
     )
 
     parser.add_argument(
         "--max_nights",
-        type=int,
+        type=float,
         help="minimum nights upper param",
         required=True
     )
