@@ -29,7 +29,7 @@ entry_points:
       max_nights:
         description: Minimum nights upper param
         type: str
-      save_locally:
+      save_clean_locally:
         description: Save file to local machine or not
         type: str
         default: False
@@ -43,4 +43,4 @@ entry_points:
                               --max_price {max_price} \
                               --min_nights {min_nights} \
                               --max_nights {max_nights} \
-                              --save_locally {save_locally}
+                              --save_clean_locally {save_clean_locally}
