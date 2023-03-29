@@ -1,0 +1,39 @@
+name: download_data
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      input_artifact:
+        description: Fully qualified name
+        type: str
+      split_artifact_root:
+        description: name of created artifact
+        type: str
+      artifact_type:
+        description: type of artifact created
+        type: str
+        default: raw_data
+      test_size:
+        description: size of test df
+        type: float
+      random_state:
+        description: number to seed generator with
+        type: str
+        default: 42
+      stratify:
+        description: column used for split
+        type: str
+        default: "null"
+      save_split_locally:
+        description: save split to local machine or not
+        type: str
+
+    command: >-
+      python run.py --input_artifact {input_artifact} \
+                    --split_artifact_root {split_artifact_root} \
+                    --artifact_type {artifact_type} \
+                    --test_size {test_size} \
+                    --random_state {random_state} \
+                    --stratify {stratify} \
+                    --save_split_locally {save_split_locally}
