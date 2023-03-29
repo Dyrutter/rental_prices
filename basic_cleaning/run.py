@@ -109,7 +109,7 @@ def go(args):
     filename = args.output_name  # "preprocessed_data.csv"
 
     # Save clean df to local machine if desired
-    if args.save_locally:
+    if args.save_clean_locally is True:
         df2 = df.copy()
         local = 'finaldata.csv'
         df2.to_csv(os.path.join(os.getcwd(), local))
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     # False values are n, no, f, false, off and 0
     # Will raise ValueError if input argument is not of proper type
     parser.add_argument(
-        "--save_locally",
+        "--save_clean_locally",
         type=lambda x: bool(strtobool(x)),
         help='Choose whether or not to save clean data frame to local file',
         required=True
