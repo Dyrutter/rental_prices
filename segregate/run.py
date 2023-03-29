@@ -2,8 +2,8 @@
 import argparse
 import logging
 import os
+from distutils.util import strtobool
 import tempfile
-
 import pandas as pd
 import wandb
 from sklearn.model_selection import train_test_split
@@ -14,19 +14,16 @@ logger = logging.getLogger()
 
 
 def go(args):
-
+    # Initiate run and get processed_data artifact
     run = wandb.init(job_type="split_data")
-
     logger.info("Downloading and reading artifact")
     artifact = run.use_artifact(args.input_artifact)
     artifact_path = artifact.file()
-
     df = pd.read_csv(artifact_path, low_memory=False)
 
     # Split in model_dev/test, then divide model_dev in train and validation
     logger.info("Splitting data into train, val and test")
     splits = {}
-
     splits["train"], splits["test"] = train_test_split(
         df,
         test_size=args.test_size,
@@ -34,23 +31,28 @@ def go(args):
         stratify=df[args.stratify] if args.stratify != 'null' else None,
     )
 
-    # Save the artifacts. We use a temporary directory so we do not leave
-    # any trace behind
+    # Save the artifacts. Use a temporary directory to remove traces
+    curr_dir = os.getcwd()
     with tempfile.TemporaryDirectory() as tmp_dir:
 
         for split, df in splits.items():
 
-            # Make the artifact name from the  root plus the name of the split
-            artifact_name = f"{args.artifact_root}_{split}.csv"
+            # Make the artifact name from the root plus "train" and "test"
+            artifact_name = f"{args.split_artifact_root}_{split}.csv"
 
             # Get the path on disk within the temp directory
             temp_path = os.path.join(tmp_dir, artifact_name)
 
             logger.info(f"Uploading the {split} dataset to {artifact_name}")
 
+            # Save locally if desired
+            if args.save_split_locally is True:
+                df2 = df.copy()
+                df2.to_csv(os.path.join(
+                    curr_dir, f"{args.split_artifact_root}_{split}.csv"))
+
             # Save then upload to W&B
             df.to_csv(temp_path)
-
             artifact = wandb.Artifact(
                 name=artifact_name,
                 type=args.artifact_type,
@@ -82,7 +84,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--artifact_root",
+        "--split_artifact_root",
         type=str,
         help="Root names of the two produced artifacts."
              "{root}_train.csv and {root}_test.csv",
@@ -119,6 +121,15 @@ if __name__ == "__main__":
         default='null'
     )
 
+    # True values are y, yes, t, true, on and 1;
+    # False values are n, no, f, false, off and 0
+    # Will raise ValueError if input argument is not of proper type
+    parser.add_argument(
+        "--save_split_locally",
+        type=lambda x: bool(strtobool(x)),
+        help='Choose whether or not to save split data frames to local files',
+        required=True
+    )
     args = parser.parse_args()
 
     go(args)
