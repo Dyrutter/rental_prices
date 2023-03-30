@@ -4,12 +4,10 @@ import argparse
 # import setuptools
 # import yaml
 import logging
-# import os
+import os
+from distutils.util import strtobool
 # import shutil
-# import matplotlib.pyplot as plt
-# import wandb
-# import mlflow
-# import json
+import wandb
 import pandas as pd
 import numpy as np
 from sklearn.pipeline import make_pipeline
@@ -43,7 +41,7 @@ def process_name(df):
         reshape_to_1d,
         TfidfVectorizer(
             binary=False,
-            max_features=10,
+            max_features=args.tfidf_max_features,
             stop_words='english'
         ),
     )
@@ -171,7 +169,32 @@ def normal(df):
 
 
 def go():
-    pass
+    # Instantiate wandb run and get train data artifact
+    run = wandb.init(job_type="engineer_data")
+    logger.info("Downloading artifact")
+    artifact = run.use_artifact(args.input_artifact, type='train_data')
+    artifact_path = artifact.file()
+    df = pd.read_csv(artifact_path, low_memory=False)
+
+    filename = args.output_artifact  # "engineered_data.csv"
+
+    # Save clean df to local machine if desired
+    if args.save_engineered_locally is True:
+        df2 = df.copy()
+        df2.to_csv(os.path.join(os.getcwd(), "engineered_data.csv"))
+    df.to_csv(args.output_artifact, index=False)
+
+    # Create artifact and upload to wandb
+    artifact = wandb.Artifact(
+        name=args.output_artifact,
+        type=args.output_type,
+        description="csv file of engineered training data",
+    )
+    artifact.add_file(filename)
+    logger.info("Logging artifact")
+    run.log_artifact(artifact)
+
+    os.remove(filename)
 
 
 if __name__ == "__main__":
@@ -190,3 +213,24 @@ if __name__ == "__main__":
         help="Name for the output data frame artifact",
         required=True
     )
+
+    parser.add_argument(
+        "--save_engineered_locally",
+        type=lambda x: bool(strtobool(x)),
+        help='Choose whether to save engieered data frame to a local file',
+        required=True
+    )
+
+    parser.add_argument(
+        "--tfidf_max_features",
+        type=float,
+        help="maximum features to use in TfidfVectorizer",
+        required=True
+    )
+    parser.add_argument(
+        "--artifact_type",
+        type=str,
+        help="Type of the produced artifact",
+        required=True
+    )
+    args = parser.parse_args()
