@@ -26,14 +26,16 @@ data:
   save_locally: False
   save_clean_locally: True
   save_split_locally: True
+  save_engineered_locally: True
   split_artifact_root: "data"
+  tfidf_max_features: 10
   sample: "sample1.csv" 
   eda_sample: "sample1.csv"
   train_data: "data_train.csv:latest"
   test_data: "data_test.csv:latest"
   kl_threshold: 0.05
   test_size: 0.2
-  val_size: 0.2
+  val_size: 0.3
   stratify_by: neighbourhood_group
   stratify: neighbourhood_group
   min_price: 10
@@ -59,6 +61,6 @@ random_forest_pipeline:
     ccp_alpha: 0.0
     max_samples: null
   max_tfidf_features: 5
-  save_locally: True
+  save_locally: True # added this
   output_artifact: "model_export"
   export_artifact: "model_export"
