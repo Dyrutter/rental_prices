@@ -74,6 +74,11 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + Splits data into train and test sets
 + Uploads data sets as artifacts to Weights and Biases
 
+### [engineer.py (engineer component)](./engineer/engineer.py)
++ Imputes missing values
++ Vectorizes 'name' column
++ One-hot encodes 'neighbourhood_group' column
+
 ### [run.py (random_forest component)](./random_forest/run.py)
 + Fits data to a random forest inference pipeline
 + Creates a scikit-learn chart of feature importances
