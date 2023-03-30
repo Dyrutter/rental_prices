@@ -99,8 +99,13 @@ def go(config: DictConfig):
             os.path.join(root_path, "engineer"),
             entry_point="main",
             parameters={
-                "input_artifact": config["data"]["preprocessed_data"],
-                "output_artifact": config["data"]["engineered_data"]
+                "input_artifact": config["data"]["train_data"],
+                "output_artifact": config["data"]["engineered_data"],
+                "artifact_type": "engineered_data",
+                "save_engineered_locally":
+                config["data"]["save_engineered_locally"],
+                "tfidf_max_features":
+                config["data"]["tfidf_max_features"]
             })
 
     if "random_forest" in steps_to_execute:
