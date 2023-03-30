@@ -78,6 +78,7 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + Imputes missing values
 + Vectorizes 'name' column
 + One-hot encodes 'neighbourhood_group' column
++ Uploads engineered train data to Weights and Biases
 
 ### [run.py (random_forest component)](./random_forest/run.py)
 + Fits data to a random forest inference pipeline
