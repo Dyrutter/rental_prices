@@ -37,11 +37,11 @@ def drop_features(df):
     """
     Features chosen for dropping from Pandas profile
     Drop 'availablility_365' because 35.9% missing values
-    Drop 'id,' 'host_id,' 'host_name', and 'neighbourhood' for cardinality
+    Drop 'id' and 'host_id" for cardinality
     Drop 'number_of_reviews' and 'reviews_per_month' b/c of high correlation
     """
-    df = df.drop(['id', 'host_id', 'host_name', 'neighbourhood',
-                  'reviews_per_month'], axis=1)
+    df = df.drop(['id', 'host_id', 'reviews_per_month',
+                  "number_of_reviews"], axis=1)
     return df
 
 
