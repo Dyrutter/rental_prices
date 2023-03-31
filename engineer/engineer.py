@@ -1,5 +1,5 @@
 import argparse
-# import tempfile
+import tempfile
 # import itertools
 # import setuptools
 # import yaml
@@ -171,44 +171,50 @@ def normal(df):
 def go():
     # Instantiate wandb run and get train data artifact
     run = wandb.init(job_type="engineer_data")
-    logger.info("Downloading artifact")
-    artifact = run.use_artifact(args.input_artifact, type='train_data')
+    logger.info("Downloading and reading artifact")
+    artifact = run.use_artifact(
+        args.engineer_input_artifact, type='train_data')
     artifact_path = artifact.file()
     df = pd.read_csv(artifact_path, low_memory=False)
 
-    filename = args.output_artifact  # "engineered_data.csv"
+    curr_dir = os.getcwd()
+    with tempfile.TemporaryDirectory() as tmp_dir:
 
-    # Save clean df to local machine if desired
-    if args.save_engineered_locally is True:
-        df2 = df.copy()
-        df2.to_csv(os.path.join(os.getcwd(), "engineered_data.csv"))
-    df.to_csv(args.output_artifact, index=False)
+        filename = args.engineer_output_artifact  # "engineered_data.csv"
+        temp_path = os.path.join(tmp_dir, filename)
 
-    # Create artifact and upload to wandb
-    artifact = wandb.Artifact(
-        name=args.output_artifact,
-        type=args.output_type,
-        description="csv file of engineered training data",
-    )
-    artifact.add_file(filename)
-    logger.info("Logging artifact")
-    run.log_artifact(artifact)
+        # Save clean df to local machine if desired
+        if args.save_engineered_locally is True:
+            df2 = df.copy()
+            df2.to_csv(os.path.join(
+                curr_dir, args.engineer_output_artifact))
+        df.to_csv(temp_path)  # might need index=False
 
-    os.remove(filename)
+        # Create artifact and upload to wandb
+        artifact = wandb.Artifact(
+            name=args.engineer_output_artifact,
+            type=args.engineer_output_type,
+            description="csv file of engineered training data",
+        )
+        artifact.add_file(temp_path)
+        logger.info("Logging artifact")
+        run.log_artifact(artifact)
+
+        artifact.wait()
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Engineering data")
     parser.add_argument(
-        "--input_artifact",
+        "--engineer_input_artifact",
         type=str,
         help="Fully-qualified name for the input artifact",
         required=True,
     )
 
     parser.add_argument(
-        "--output_artifact",
+        "--engineer_output_artifact",
         type=str,
         help="Name for the output data frame artifact",
         required=True
@@ -228,9 +234,22 @@ if __name__ == "__main__":
         required=True
     )
     parser.add_argument(
-        "--artifact_type",
+        "--engineer_artifact_type",
         type=str,
         help="Type of the produced artifact",
+        required=True
+    )
+
+    parser.add_argument(
+        "--use_host",
+        type=lambda x: bool(strtobool(x)),
+        help='Choose whether to use the host_name feature',
+        required=True
+    )
+    parser.add_argument(
+        "--use_neighbourhood",
+        type=lambda x: bool(strtobool(x)),
+        help='Choose whether to use the neighbourhood feature',
         required=True
     )
     args = parser.parse_args()
