@@ -20,6 +20,31 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
 
 
+def engineer_dates(data_frame):
+    """
+    Convert date column to feature that represents the number of days passed
+    since the last review.
+    Impute missing date values from an old date, because there hasn't been a
+    review for a long time
+    """
+    # Reshape date column for compatability and convert to datetime
+    date_column = np.array(data_frame['last_review']).reshape(-1, 1)
+    date_sanitized = pd.DataFrame(date_column).apply(pd.to_datetime)
+
+    # Convert datetime days to ints & get the distance between them
+    # d.max() is most recent day (2019-07-08) ! d is the date
+    # .dt.days is applied to a date range between start and end dates
+    # returning the difference between both dates in days
+    dates_col = date_sanitized.apply(
+        lambda d: (d.max() - d).dt.days, axis=0).to_numpy()
+
+    # Impute dates and add imputed column to data frame
+    date_imputer = SimpleImputer(strategy='most_frequent')
+    dates_imputed = date_imputer.fit_transform(dates_col)
+    data_frame['last_review'] = dates_imputed
+    return data_frame
+
+
 def process_name(df):
     """
     Impute missing values in 'name' column, then apply TfidfVectorizer
