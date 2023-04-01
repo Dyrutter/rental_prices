@@ -17,18 +17,6 @@ entry_points:
       output_description:
         description: Description for the artifact
         type: str
-      min_price:
-        description: Minimum price
-        type: str
-      max_price:
-        description: Maximum price
-        type: str
-      min_nights:
-        description: Minimum nights lower param
-        type: str
-      max_nights:
-        description: Minimum nights upper param
-        type: str
       save_clean_locally:
         description: Save file to local machine or not
         type: str
@@ -39,8 +27,4 @@ entry_points:
                               --output_name {output_name} \
                               --output_type {output_type} \
                               --output_description {output_description} \
-                              --min_price {min_price} \
-                              --max_price {max_price} \
-                              --min_nights {min_nights} \
-                              --max_nights {max_nights} \
                               --save_clean_locally {save_clean_locally}
