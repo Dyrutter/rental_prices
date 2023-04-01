@@ -20,7 +20,32 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
 
 
-def engineer_dates(data_frame):
+def process_coordinates(data_frame):
+    """
+    Impute missing latitude and longitude values, and confirm they
+    fall within the expected range for New York
+    """
+    # Impute latitude values
+    lat_imputer = SimpleImputer(strategy='most_frequent')
+    lat_col = np.array(data_frame['latitude']).reshape(-1, 1)
+    lat_imputed = lat_imputer.fit_transform(lat_col)
+    data_frame['latitude'] = lat_imputed
+
+    # Impute longitude values
+    long_imputer = SimpleImputer(strategy='most_frequent')
+    long_col = np.array(data_frame['longitude']).reshape(-1, 1)
+    long_imputed = long_imputer.fit_transform(long_col)
+    data_frame['longitude'] = long_imputed
+
+    # Drop lats and longs not in NYC
+    idx = data_frame['longitude'].between(-74.25, -73.50) &\
+        data_frame['latitude'].between(40.5, 41.2)
+    data_frame = data_frame[idx].copy()
+    return data_frame
+
+
+# check that imputation worked on NaNs
+def process_dates(data_frame):
     """
     Convert date column to feature that represents the number of days passed
     since the last review.
@@ -39,7 +64,7 @@ def engineer_dates(data_frame):
         lambda d: (d.max() - d).dt.days, axis=0).to_numpy()
 
     # Impute dates and add imputed column to data frame
-    date_imputer = SimpleImputer(strategy='most_frequent')
+    date_imputer = SimpleImputer(strategy='median')
     dates_imputed = date_imputer.fit_transform(dates_col)
     data_frame['last_review'] = dates_imputed
     return data_frame
@@ -176,6 +201,54 @@ def process_neigh(df):
     return df
 
 
+def impute_numerics(df):
+    """
+    Impute missing values in numeric columns "minimum_nights",
+    "number_of_reviews", and "availability_365"
+    """
+    # Impute "minimum nights" Highly-skewed, so use median
+    imputer = SimpleImputer(strategy="median")
+    col = np.array(df["minimum_nights"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["minimum_nights"] = imputed_col
+
+    # Impute "calculated_host_listings_count"
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["calculated_host_listings_count"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["calculated_host_listings_count"] = imputed_col
+
+    # Impute "availability_365. 20.4% are zeroes
+    imputer = SimpleImputer(strategy="median")
+    col = np.array(df["availability_365"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["availability_365"] = imputed_col
+    return df
+
+
+def drop_outliers(df):
+    """
+    Drop extreme outliers as discovered in y_data profiling
+    """
+    # Drop major outliers from last review, default (0,50)
+    idx = df['last_review'].between(args.min_date, args.max_date)
+    df = df[idx].copy()
+
+    # Drop outliers for minimum nights stayed, default (0,4)
+    idx = df['minimum_nights'].between(args.min_nights, args.max_nights)
+    df = df[idx].copy()
+
+    # Drop major outliers from calculated_host_listings_count, default (1,5)
+    idx = df['calculated_host_listings_count'].between(
+        args.min_listings, args.max_listings)
+    df = df[idx].copy()
+
+    # Drop undesired price values
+    idx = df['price'].between(args.min_price, args.max_price)
+    df = df[idx].copy()
+    return df
+
+
 def normal(df):
     """
     Apply normalization to data frame
@@ -277,4 +350,61 @@ if __name__ == "__main__":
         help='Choose whether to use the neighbourhood feature',
         required=True
     )
+
+    parser.add_argument(
+        "--min_date",
+        type=float,
+        help='lower range for "last_review" feature outliers',
+        required=True
+    )
+
+    parser.add_argument(
+        "--max_date",
+        type=float,
+        help='upper range for "last_review" feature outliers',
+        required=True
+    )
+
+    parser.add_argument(
+        "--min_nights",
+        type=float,
+        help="minimum nights lower param",
+        required=True
+    )
+
+    parser.add_argument(
+        "--max_nights",
+        type=float,
+        help="minimum nights upper param",
+        required=True
+    )
+
+    parser.add_argument(
+        "--min_listings",
+        type=float,
+        help="minimum listings lower param",
+        required=True
+    )
+
+    parser.add_argument(
+        "--max_listings",
+        type=float,
+        help="minimum listings upper param",
+        required=True
+    )
+
+    parser.add_argument(
+        "--min_price",
+        type=float,
+        help='minimum price',
+        required=True
+    )
+
+    parser.add_argument(
+        "--max_price",
+        type=float,
+        help='maximum price',
+        required=True
+    )
+
     args = parser.parse_args()
