@@ -22,26 +22,35 @@ data:
   raw_data_artifact: "raw_data.csv:latest"
   preprocessed_data: "preprocessed_data.csv"
   engineered_data: "engineered_data.csv"
+  engineer_artifact_type: "engineered_data"
   preprocessed_data_latest: "preprocessed_data.csv:latest"
-  save_locally: False
+  engineer_input_artifact: "data_train.csv:latest"
+  engineer_output_artifact: "engineered_data.csv"
+  save_locally: True # raw data
   save_clean_locally: True
   save_split_locally: True
   save_engineered_locally: True
+  use_host: True
+  use_neighbourhood: True
   split_artifact_root: "data"
   tfidf_max_features: 10
   sample: "sample1.csv" 
   eda_sample: "sample1.csv"
-  train_data: "data_train.csv:latest"
-  test_data: "data_test.csv:latest"
+  train_data: "data_train.csv"
+  test_data: "data_test.csv"
   kl_threshold: 0.05
   test_size: 0.2
   val_size: 0.3
   stratify_by: neighbourhood_group
   stratify: neighbourhood_group
+  min_date: 0
+  max_date: 3500 #50 is 85th percentile, 3475 is max
   min_price: 10
-  max_price: 350
+  max_price: 350 #1000 is max
   min_nights: 0
-  max_nights: 4
+  max_nights: 4 # outlier at 1250
+  min_listings: 1
+  max_listings: 5
 random_forest_pipeline:
   random_forest:
     n_estimators: 100
