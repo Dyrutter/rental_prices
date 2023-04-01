@@ -65,10 +65,6 @@ def go(config: DictConfig):
                 "output_name": config["data"]["preprocessed_data"],
                 "output_type": "preprocessed_data",
                 "output_description": "Data with preprocessing applied",
-                "min_price": config["data"]["min_price"],
-                "max_price": config["data"]["max_price"],
-                "min_nights": config["data"]["min_nights"],
-                "max_nights": config["data"]["max_nights"],
                 "save_clean_locally": config["data"]["save_clean_locally"]})
 
     if "check_data" in steps_to_execute:
@@ -99,14 +95,24 @@ def go(config: DictConfig):
             os.path.join(root_path, "engineer"),
             entry_point="main",
             parameters={
-                "input_artifact": config["data"]["train_data"],
-                "output_artifact": config["data"]["engineered_data"],
-                "artifact_type": "engineered_data",
+                "engineer_input_artifact": config["data"]["train_data"],
+                "engineer_output_artifact": config["data"]["engineered_data"],
+                "engineer_artifact_type":
+                config["data"]["engineer_artifact_type"],
                 "save_engineered_locally":
                 config["data"]["save_engineered_locally"],
                 "tfidf_max_features":
-                config["data"]["tfidf_max_features"]
-            })
+                config["data"]["tfidf_max_features"],
+                "use_host": config["data"]["use_host"],
+                "use_neighbourhood": config["data"]["use_neighbourhood"],
+                "min_date": config["data"]["min_date"],
+                "max_date": config["data"]["max_date"],
+                "min_nights": config["data"]["min_nights"],
+                "max_nights": config["data"]["max_nights"],
+                "min_listings": config["data"]["min_listings"],
+                "max_listings": config["data"]["max_listings"],
+                "min_price": config["data"]["min_price"],
+                "max_price": config["data"]["max_price"]})
 
     if "random_forest" in steps_to_execute:
         # NOTE: we need to serialize the random forest configuration into JSON
