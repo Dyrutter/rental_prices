@@ -13,7 +13,6 @@ logger = logging.getLogger()
 def drop_features(df):
     """
     Features chosen for dropping from Pandas profile
-    Drop 'availablility_365' because 35.9% missing values
     Drop 'id' and 'host_id" for cardinality
     Drop 'number_of_reviews' and 'reviews_per_month' b/c of high correlation
     """
@@ -32,36 +31,6 @@ def drop_useless(df):
     return df
 
 
-def drop_outliers(df):
-    """
-    Drop extreme outliers for 'minimum_nights', 'last_review', and
-        'calculated_host_listings_count'
-        (found in pandas profiling report)
-    Drop all latitudes and longitudes not in NYC
-    """
-    # Drop major outliers from minimum nights
-    idx = df['minimum_nights'].between(args.min_nights, args.max_nights)
-    df = df[idx].copy()
-
-    # Drop major outliers from last review
-    idx = df['last_review'].between(0, 50)
-    df = df[idx].copy()
-
-    # Drop major outliers from calculated_host_listings_count
-    idx = df['calculated_host_listings_count'].between(1, 5)
-    df = df[idx].copy()
-
-    # Drop lats and longs not in NYC
-    idx = df['longitude'].between(-74.25, -73.50) &\
-        df['latitude'].between(40.5, 41.2)
-    df = df[idx].copy()
-
-    # Drop price outliers
-    idx = df['price'].between(args.min_price, args.max_price)
-    df = df[idx].copy()
-    return df
-
-
 def go(args):
 
     # Instantiate wandb run and get raw data artifact
@@ -76,15 +45,13 @@ def go(args):
     df = drop_features(df)
     logger.info("Dropping duplicates and rows missing 'price'")
     df = drop_useless(df)
-    logger.info("Dropping outliers")
-    df = drop_outliers(df)
 
-    filename = args.output_name  # "preprocessed_data.csv"
+    filename = args.output_name
 
     # Save clean df to local machine if desired
     if args.save_clean_locally is True:
         df2 = df.copy()
-        local = 'finaldata.csv'
+        local = 'basic_data.csv'
         df2.to_csv(os.path.join(os.getcwd(), local))
     df.to_csv(args.output_name, index=False)
 
@@ -133,34 +100,6 @@ if __name__ == "__main__":
         type=str,
         help="Description for the artifact",
         required=True,
-    )
-
-    parser.add_argument(
-        "--min_price",
-        type=float,
-        help='minimum price',
-        required=True
-    )
-
-    parser.add_argument(
-        "--max_price",
-        type=float,
-        help='maximum price',
-        required=True
-    )
-
-    parser.add_argument(
-        "--min_nights",
-        type=float,
-        help="minimum nights lower param",
-        required=True
-    )
-
-    parser.add_argument(
-        "--max_nights",
-        type=float,
-        help="minimum nights upper param",
-        required=True
     )
 
     # True values are y, yes, t, true, on and 1;
