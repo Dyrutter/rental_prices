@@ -76,6 +76,8 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + Imputes missing values
 + Vectorizes 'name' column
 + One-hot encodes 'neighbourhood_group' column
++ Drops outliers specified in [hydra config file](./config/config.yaml)
++ Engineers dates to date feature
 + Uploads engineered train data to Weights and Biases
 
 ### [run.py (random_forest component)](./random_forest/run.py)
