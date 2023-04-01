@@ -1,0 +1,67 @@
+name: basic_cleaning #changed from download_data
+conda_env: conda.yml
+entry_points:
+  main:
+    parameters:
+      engineer_input_artifact:
+        description: Fully qualified name for the artifact
+        type: str
+      engineer_output_artifact:
+        description: Name for the W&B artifact that will be created
+        type: str      
+      engineer_artifact_type:
+        description: Type of the artifact to create
+        type: str
+        default: engineered_data
+      save_engineered_locally:
+        description: Whether or not to save engineered data to local machine
+        type: str
+      tfidf_max_features:
+        description: Maximum number of words to consider for the TFIDF
+        type: str
+      use_host:
+        description: Whether or not to perform n-gram analysis on host name
+        type: str
+      use_neighbourhood:
+        description: Whether to perform n-gram analysis on neighbourhood feature
+        type: str
+      min_date:
+        description: Least amount of days since last review
+        type: str
+      max_date:
+        description: Most amount of days since last review
+        type: str
+      min_nights:
+        description: Minimum number of nights stayed
+        type: str
+      max_nights:
+        description: Maximum number of nights stayed
+        type: str
+      min_listings:
+        description: Minimum number of listings
+        type: str
+      max_listings:
+        description: Maximum number of listings
+        type: str
+      min_price:
+        description: Minimum price
+        type: str
+      max_price:
+        description: Maximum price
+        type: str
+    command: >-
+      python run.py --engineer_input_artifact {engineer_input_artifact} \
+                              --engineer_output_artifact {engineer_output_artifact} \
+                              --engineer_artifact_type {engineer_artifact_type} \
+                              --save_engineered_locally {save_engineered_locally} \
+                              --tfidf_max_features {tfidf_max_features} \
+                              --use_host {use_host} \
+                              --use_neighbourhood {use_neighbourhood} \
+                              --min_date {min_date} \
+                              --max_date {max_date} \
+                              --min_nights {min_nights} \
+                              --max_nights {max_nights} \
+                              --min_listings {min_listings} \
+                              --max_listings {max_listings} \
+                              --min_price {min_price} \
+                              --max_price {max_price}
