@@ -4,14 +4,15 @@ This is a demonstration of an MLOps pipeline using MLFLow and Weights & Biases.
 
 In this example, a property management company is renting rooms and properties for short periods of time on various platforms. I estimate the typical price for a given property based on the price of similar properties. New data is received in bulk on a frequent basis. With each addition, the model is retrained with the same cadence, necessitating an end-to-end pipeline in production.
 
-The pipeline has 7 components:
+The pipeline has 9 components:
 + Download raw data
 + Confirm raw data's integrity using Pytest
 + An EDA analysis using pandas profiling, which creates an ipython notebook
-+ Clean/preprocess data based on pandas profiling findings
++ Clean data based on pandas profiling findings
 + Confirm preprocessed data's integrity using Pytest
 + Data Segregation (Splitting into train and test sets)
-+ Create a model
++ Engineering features to create a final data set
++ Create a model using engineered data set
 + Test the model's performance metrics & produce analytic images
 
 Each component can be run independently, assuming its previous component(s) have been run at least once.
