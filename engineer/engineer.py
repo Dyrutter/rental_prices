@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.pipeline import make_pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
-from sklearn.preprocessing import FunctionTransformer, normalize
+from sklearn.preprocessing import FunctionTransformer, MinMaxScaler
 from sklearn.impute import SimpleImputer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
@@ -22,8 +22,7 @@ logger = logging.getLogger()
 
 def process_coordinates(data_frame):
     """
-    Impute missing latitude and longitude values, and confirm they
-    fall within the expected range for New York
+    Impute missing latitude and longitude values
     """
     # Impute latitude values
     lat_imputer = SimpleImputer(strategy='most_frequent')
@@ -36,15 +35,9 @@ def process_coordinates(data_frame):
     long_col = np.array(data_frame['longitude']).reshape(-1, 1)
     long_imputed = long_imputer.fit_transform(long_col)
     data_frame['longitude'] = long_imputed
-
-    # Drop lats and longs not in NYC
-    idx = data_frame['longitude'].between(-74.25, -73.50) &\
-        data_frame['latitude'].between(40.5, 41.2)
-    data_frame = data_frame[idx].copy()
     return data_frame
 
 
-# check that imputation worked on NaNs
 def process_dates(data_frame):
     """
     Convert date column to feature that represents the number of days passed
@@ -165,13 +158,23 @@ def process_host(df):
     Apply Count Vectorizer to 'host_name', b/c looking at
         n-grams is the most effective way to analyze single names
     """
-    host_count = CountVectorizer(
-        ngram_range=(2, 3),
-        max_features=10,
-        analyzer="char")
+    reshape_to_1d = FunctionTransformer(np.reshape,
+                                        kw_args={"newshape": -1},
+                                        feature_names_out='one-to-one')
 
-    host_col = pd.Series(df['host_name'])
-    host_vect = host_count.fit_transform(host_col).toarray()
+    # make pipeline that imputes, reshapes, and vectorizes
+    host_grams = make_pipeline(
+        SimpleImputer(strategy="constant", fill_value=""),
+        reshape_to_1d,
+        CountVectorizer(
+            ngram_range=(2, 3),
+            analyzer="char",
+            grams_max_features=args.grams_max_features))
+
+    # Squeeze name column series to a scalar & transform using tf_idf
+    # Returned type is scipy sparse matrix, so must use toarray()
+    host_col = pd.Series(df['host_name']).squeeze().values.reshape(-1, 1)
+    host_vect = host_grams.fit_transform(host_col).toarray()
     host_df = pd.DataFrame(
         host_vect,
         columns=['Host_' + str(i + 1) for i in range(host_vect.shape[1])])
@@ -186,13 +189,24 @@ def process_neigh(df):
     Apply Count Vectorizer to 'neighbourhood', b/c looking at
     n-grams is the most effective way to analyze single names
     """
-    neigh_count = CountVectorizer(
-        ngram_range=(2, 3),
-        max_features=10,
-        analyzer='char')
+    reshape_to_1d = FunctionTransformer(np.reshape,
+                                        kw_args={"newshape": -1},
+                                        feature_names_out='one-to-one')
 
-    neigh_col = pd.Series(df['neighbourhood'])
-    neigh_vect = neigh_count.fit_transform(neigh_col).toarray()
+    # make pipeline that imputes, reshapes, and vectorizes
+    neigh_grams = make_pipeline(
+        SimpleImputer(strategy="constant", fill_value=""),
+        reshape_to_1d,
+        CountVectorizer(
+            ngram_range=(2, 3),
+            analyzer="char",
+            grams_max_features=args.grams_max_features))
+
+    # Squeeze name column series to a scalar & transform using tf_idf
+    # Returned type is scipy sparse matrix, so must use toarray()
+    neigh_col = pd.Series(df['neighbourhood']).squeeze().values.reshape(-1, 1)
+    neigh_vect = neigh_grams.fit_transform(neigh_col).toarray()
+
     neigh_df = pd.DataFrame(
         neigh_vect,
         columns=['neigh_' + str(i + 1) for i in range(neigh_vect.shape[1])])
@@ -246,24 +260,24 @@ def drop_outliers(df):
     # Drop undesired price values
     idx = df['price'].between(args.min_price, args.max_price)
     df = df[idx].copy()
+
+    # Drop lats and longs not in NYC
+    idx = df['longitude'].between(-74.25, -73.50) &\
+        df['latitude'].between(40.5, 41.2)
+    df = df[idx].copy()
     return df
 
 
-def normal(df):
+def scale(df):
     """
-    Apply normalization to data frame
+    Apply normalization using MinMaxScaler
+    Data is NOT in a gaussian distribution, so don't standardize
     """
-    # Fill the nas left by vectorizers
-    df = df.fillna(0)
-    # Separate features and labels
-    labels = df['price']
-    features = df.drop(['price'], axis=1)
-
-    # Normalize features and return labels to data frame
-    norm = normalize(features)
-    features = pd.DataFrame(norm, columns=features.columns)
-    features['price'] = labels
-    return features
+    columns = df.columns
+    scaler = MinMaxScaler()
+    scaled = scaler.fit_transform(df)
+    df = pd.DataFrame(scaled, columns=columns)
+    return df
 
 
 def go():
@@ -331,6 +345,13 @@ if __name__ == "__main__":
         help="maximum features to use in TfidfVectorizer",
         required=True
     )
+
+    parser.add_argument(
+        "--grams_max_features",
+        type=float,
+        help="maximum features to use in CountVectorizer",
+        required=True)
+
     parser.add_argument(
         "--engineer_artifact_type",
         type=str,
