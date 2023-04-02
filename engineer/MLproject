@@ -1,4 +1,4 @@
-name: basic_cleaning #changed from download_data
+name: engineer
 conda_env: conda.yml
 entry_points:
   main:
@@ -18,6 +18,9 @@ entry_points:
         type: str
       tfidf_max_features:
         description: Maximum number of words to consider for the TFIDF
+        type: str
+      grams_max_features:
+        description: Maximum n-grams to consider in CountVectorizer
         type: str
       use_host:
         description: Whether or not to perform n-gram analysis on host name
@@ -55,6 +58,7 @@ entry_points:
                               --engineer_artifact_type {engineer_artifact_type} \
                               --save_engineered_locally {save_engineered_locally} \
                               --tfidf_max_features {tfidf_max_features} \
+                              --grams_max_features {grams_max_features} \
                               --use_host {use_host} \
                               --use_neighbourhood {use_neighbourhood} \
                               --min_date {min_date} \
