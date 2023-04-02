@@ -36,8 +36,8 @@ data:
   tfidf_max_features: 10
   sample: "sample1.csv" 
   eda_sample: "sample1.csv"
-  train_data: "data_train.csv"
-  test_data: "data_test.csv"
+  train_data: "data_train.csv" # Output of segregate step
+  test_data: "data_test.csv" # Output of segregate step
   kl_threshold: 0.05
   test_size: 0.2
   val_size: 0.3
@@ -51,6 +51,7 @@ data:
   max_nights: 4 # outlier at 1250
   min_listings: 1
   max_listings: 5
+  grams_max_features: 300
 random_forest_pipeline:
   random_forest:
     n_estimators: 100
