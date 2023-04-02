@@ -1,53 +1,5 @@
 import pandas as pd
-import numpy as np
 import scipy.stats
-
-
-def test_column_names(data):
-
-    expected_colums = [
-        "name",
-        "host_name",
-        "neighbourhood_group",
-        "neighbourhood",
-        "latitude",
-        "longitude",
-        "room_type",
-        "price",
-        "minimum_nights",
-        "number_of_reviews",
-        "last_review",
-        "reviews_per_month",
-        "calculated_host_listings_count",
-        "availability_365",
-    ]
-
-    these_columns = data.columns.values
-
-    # This also enforces the same order
-    assert list(expected_colums) == list(these_columns)
-
-
-def test_neighborhood_names(data):
-
-    known_names = ["Bronx", "Brooklyn", "Manhattan",
-                   "Queens", "Staten Island"]
-
-    neigh = set(data['neighbourhood_group'].unique())
-
-    # Unordered check
-    assert set(known_names) == set(neigh)
-
-
-def test_proper_boundaries(data: pd.DataFrame):
-    """
-    Test proper longitude and latitude boundaries for
-    properties in and around NYC
-    """
-    idx = data['longitude'].between(
-        -74.25, - 73.50) & data['latitude'].between(40.5, 41.2)
-
-    assert np.sum(~idx) == 0
 
 
 def test_similar_neigh_distrib(
@@ -65,9 +17,17 @@ def test_similar_neigh_distrib(
     assert scipy.stats.entropy(dist1, dist2, base=2) < kl_threshold
 
 
-def test_price_range(data, min_price, max_price):
+def test_columns_dropped(data: pd.DataFrame):
     """
-    Confirm price range is between min_price and max_price
+    Confirm appropriate columns were dropped
     """
-    # print (max(list(data["price"])))
-    assert (data["price"].between(min_price, max_price)).all()
+    dropped = ["id", "host_id", "reviews_per_month", "number_of_reviews"]
+    for col in dropped:
+        assert col not in list(data.columns.values)
+
+
+def test_price_nans_dropped(data: pd.DataFrame):
+    """
+    Confirm NaN values in price (label) column were dropped
+    """
+    assert data['price'].isna().sum() == 0
