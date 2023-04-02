@@ -101,8 +101,8 @@ def go(config: DictConfig):
                 config["data"]["engineer_artifact_type"],
                 "save_engineered_locally":
                 config["data"]["save_engineered_locally"],
-                "tfidf_max_features":
-                config["data"]["tfidf_max_features"],
+                "tfidf_max_features": config["data"]["tfidf_max_features"],
+                "grams_max_features": config["data"]["grams_max_features"],
                 "use_host": config["data"]["use_host"],
                 "use_neighbourhood": config["data"]["use_neighbourhood"],
                 "min_date": config["data"]["min_date"],
