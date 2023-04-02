@@ -33,7 +33,7 @@ def drop_useless(df):
 
 def go(args):
 
-    # Instantiate wandb run and get raw data artifact
+    # Instantiate wandb, run, and get raw data artifact
     run = wandb.init(job_type="process_data")
     logger.info("Downloading artifact")
     artifact = run.use_artifact(args.input_artifact, type='raw_data')
