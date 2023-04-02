@@ -74,9 +74,7 @@ def go(config: DictConfig):
             parameters={
                 "reference_artifact": config["data"]["reference_dataset"],
                 "sample_artifact": config["data"]["preprocessed_data_latest"],
-                "kl_threshold": config["data"]["kl_threshold"],
-                "min_price": config["data"]["min_price"],
-                "max_price": config["data"]["max_price"]})
+                "kl_threshold": config["data"]["kl_threshold"]})
 
     if "segregate" in steps_to_execute:
         _ = mlflow.run(
