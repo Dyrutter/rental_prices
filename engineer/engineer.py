@@ -245,10 +245,15 @@ def impute_numerics(df):
     df["calculated_host_listings_count"] = imputed_col
 
     # Impute "availability_365. 20.4% are zeroes
-    imputer = SimpleImputer(strategy="median")
+    imputer = SimpleImputer(strategy="most_frequent")
     col = np.array(df["availability_365"]).reshape(-1, 1)
     imputed_col = imputer.fit_transform(col)
     df["availability_365"] = imputed_col
+
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df['number_of_reviews']).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df['number_of_reviews'] = imputed_col
     return df
 
 
