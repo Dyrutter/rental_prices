@@ -30,8 +30,8 @@ data:
   save_clean_locally: True
   save_split_locally: True
   save_engineered_locally: True
-  use_host: True
-  use_neighbourhood: True
+  use_host: False
+  use_neighbourhood: False
   split_artifact_root: "data"
   tfidf_max_features: 10
   sample: "sample1.csv" 
