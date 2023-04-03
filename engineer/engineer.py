@@ -22,19 +22,25 @@ logger = logging.getLogger()
 
 def process_coordinates(data_frame):
     """
-    Impute missing latitude and longitude values
+    Impute missing latitude and longitude values and drop any
+    not in NYC
     """
     # Impute latitude values
-    lat_imputer = SimpleImputer(strategy='most_frequent')
+    lat_imputer = SimpleImputer(strategy='constant', fill_value=-74.0)
     lat_col = np.array(data_frame['latitude']).reshape(-1, 1)
     lat_imputed = lat_imputer.fit_transform(lat_col)
     data_frame['latitude'] = lat_imputed
 
     # Impute longitude values
-    long_imputer = SimpleImputer(strategy='most_frequent')
+    long_imputer = SimpleImputer(strategy='constant', fill_value=-74.0)
     long_col = np.array(data_frame['longitude']).reshape(-1, 1)
     long_imputed = long_imputer.fit_transform(long_col)
     data_frame['longitude'] = long_imputed
+
+    # Dropt coordinates not in NYC
+    idx = data_frame['longitude'].between(-74.25, -73.50) &\
+        data_frame['latitude'].between(40.5, 41.2)
+    data_frame = data_frame[idx].copy()
     return data_frame
 
 
@@ -42,8 +48,6 @@ def process_dates(data_frame):
     """
     Convert date column to feature that represents the number of days passed
     since the last review.
-    Impute missing date values from an old date, because there hasn't been a
-    review for a long time
     """
     # Reshape date column for compatability and convert to datetime
     date_column = np.array(data_frame['last_review']).reshape(-1, 1)
@@ -55,10 +59,18 @@ def process_dates(data_frame):
     # returning the difference between both dates in days
     dates_col = date_sanitized.apply(
         lambda d: (d.max() - d).dt.days, axis=0).to_numpy()
+    data_frame['last_review'] = dates_col
 
-    # Impute dates and add imputed column to data frame
+    return data_frame
+
+
+def impute_dates(data_frame):
+    """
+    Impute dates based on median value
+    """
+    col = np.array(data_frame["last_review"]).reshape(-1, 1)
     date_imputer = SimpleImputer(strategy='median')
-    dates_imputed = date_imputer.fit_transform(dates_col)
+    dates_imputed = date_imputer.fit_transform(col)
     data_frame['last_review'] = dates_imputed
     return data_frame
 
@@ -72,8 +84,8 @@ def process_name(df):
         n-grams is the most effective way to analyze single names
     """
     # Tf-idf accepts only a 1D array, whereas simple imputer only accepts 2D
-    # feature_names_out='one-to-one' determines list of feature names
-    # returned by get_feature_names_out method
+    # feature_names_out='one-to-one' determines list of feature names returned
+    # by get_feature_names_out method
     reshape_to_1d = FunctionTransformer(np.reshape,
                                         kw_args={"newshape": -1},
                                         feature_names_out='one-to-one')
@@ -169,7 +181,7 @@ def process_host(df):
         CountVectorizer(
             ngram_range=(2, 3),
             analyzer="char",
-            grams_max_features=args.grams_max_features))
+            max_features=args.grams_max_features))
 
     # Squeeze name column series to a scalar & transform using tf_idf
     # Returned type is scipy sparse matrix, so must use toarray()
@@ -200,7 +212,7 @@ def process_neigh(df):
         CountVectorizer(
             ngram_range=(2, 3),
             analyzer="char",
-            grams_max_features=args.grams_max_features))
+            max_features=args.grams_max_features))
 
     # Squeeze name column series to a scalar & transform using tf_idf
     # Returned type is scipy sparse matrix, so must use toarray()
@@ -261,10 +273,6 @@ def drop_outliers(df):
     idx = df['price'].between(args.min_price, args.max_price)
     df = df[idx].copy()
 
-    # Drop lats and longs not in NYC
-    idx = df['longitude'].between(-74.25, -73.50) &\
-        df['latitude'].between(40.5, 41.2)
-    df = df[idx].copy()
     return df
 
 
@@ -280,6 +288,48 @@ def scale(df):
     return df
 
 
+def engineer_pipe(df):
+    """
+    Full engineer pipeline
+    """
+    logger.info("Dropping outliers")
+    df = drop_outliers(df)
+
+    logger.info("Processing dates")
+    df = process_dates(df)
+
+    logger.info("Processing coordinates")
+    df = process_coordinates(df)
+
+    logger.info("Processing name")
+    df = process_name(df)
+
+    logger.info("Processing room_type")
+    df = process_room_type(df)
+
+    logger.info("Processing neighbourhood_group")
+    df = process_group(df)
+
+    logger.info("Imputing numeric features")
+    df = impute_numerics(df)
+
+    if args.use_host:
+        logger.info("Processing host_name")
+        df = process_host(df)
+    else:
+        logger.info("Dropping host_name")
+        df = df.drop(['host_name'], axis=1)
+
+    if args.use_neigh:
+        logger.info("Processing neighbourhood")
+        df = process_neigh(df)
+    else:
+        logger.info("Dropping neighbourhood")
+        df = df.drop(['neighbourhood'], axis=1)
+    df = scale(df)
+    return df
+
+
 def go():
     # Instantiate wandb run and get train data artifact
     run = wandb.init(job_type="engineer_data")
@@ -289,10 +339,14 @@ def go():
     artifact_path = artifact.file()
     df = pd.read_csv(artifact_path, low_memory=False)
 
+    # Engineer data
+    logger.info("Engineering data")
+    df = engineer_pipe(df)
+    logger.info("Data successfully engineered")
     curr_dir = os.getcwd()
-    with tempfile.TemporaryDirectory() as tmp_dir:
 
-        filename = args.engineer_output_artifact  # "engineered_data.csv"
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        filename = args.engineer_output_artifact
         temp_path = os.path.join(tmp_dir, filename)
 
         # Save clean df to local machine if desired
@@ -300,6 +354,7 @@ def go():
             df2 = df.copy()
             df2.to_csv(os.path.join(
                 curr_dir, args.engineer_output_artifact))
+            logger.info("Data saved to local machine")
         df.to_csv(temp_path)  # might need index=False
 
         # Create artifact and upload to wandb
@@ -309,8 +364,8 @@ def go():
             description="csv file of engineered training data",
         )
         artifact.add_file(temp_path)
-        logger.info("Logging artifact")
         run.log_artifact(artifact)
+        logger.info("Artifact successfully logged")
 
         artifact.wait()
 
