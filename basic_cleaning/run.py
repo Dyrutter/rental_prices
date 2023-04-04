@@ -14,9 +14,9 @@ def drop_features(df):
     """
     Features chosen for dropping from Pandas profile
     Drop 'id' and 'host_id" for cardinality
-    Drop 'number_of_reviews' and 'reviews_per_month' b/c of high correlation
+    Drop 'reviews_per_month' b/c of high correlation
     """
-    df = df.drop(['id', 'host_id'], axis=1)
+    df = df.drop(['id', 'host_id', 'reviews_per_month'], axis=1)
     return df
 
 
