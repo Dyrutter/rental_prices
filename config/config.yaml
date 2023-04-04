@@ -36,7 +36,7 @@ data:
   tfidf_max_features: 10
   sample: "sample1.csv" 
   eda_sample: "sample1.csv"
-  train_data: "data_train.csv" # Output of segregate step
+  train_data: "data_train.csv:latest" # Output of segregate step
   test_data: "data_test.csv" # Output of segregate step
   kl_threshold: 0.05
   test_size: 0.2
