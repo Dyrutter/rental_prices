@@ -1,5 +1,6 @@
 import pandas as pd
 import scipy.stats
+import numpy as np
 
 
 def test_similar_neigh_distrib(
@@ -16,6 +17,7 @@ def test_similar_neigh_distrib(
 
     assert scipy.stats.entropy(dist1, dist2, base=2) < kl_threshold
 
+
 def test_proper_boundaries(data: pd.DataFrame):
     """
     Test proper longitude and latitude boundaries for
@@ -25,6 +27,7 @@ def test_proper_boundaries(data: pd.DataFrame):
         -74.25, - 73.50) & data['latitude'].between(40.5, 41.2)
 
     assert np.sum(~idx) == 0
+
 
 def test_price_nans_dropped(data: pd.DataFrame):
     """
