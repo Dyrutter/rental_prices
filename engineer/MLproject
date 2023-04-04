@@ -53,7 +53,7 @@ entry_points:
         description: Maximum price
         type: str
     command: >-
-      python run.py --engineer_input_artifact {engineer_input_artifact} \
+      python engineer.py --engineer_input_artifact {engineer_input_artifact} \
                               --engineer_output_artifact {engineer_output_artifact} \
                               --engineer_artifact_type {engineer_artifact_type} \
                               --save_engineered_locally {save_engineered_locally} \
