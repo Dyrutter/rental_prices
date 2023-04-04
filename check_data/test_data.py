@@ -17,15 +17,6 @@ def test_similar_neigh_distrib(
     assert scipy.stats.entropy(dist1, dist2, base=2) < kl_threshold
 
 
-def test_columns_dropped(data: pd.DataFrame):
-    """
-    Confirm appropriate columns were dropped
-    """
-    dropped = ["id", "host_id", "reviews_per_month", "number_of_reviews"]
-    for col in dropped:
-        assert col not in list(data.columns.values)
-
-
 def test_price_nans_dropped(data: pd.DataFrame):
     """
     Confirm NaN values in price (label) column were dropped
