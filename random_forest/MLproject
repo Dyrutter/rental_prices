@@ -1,0 +1,44 @@
+name: decision_tree
+conda_env: conda.yml
+
+entry_points:
+  main:
+    parameters:
+      trainval_artifact:
+        description: Fully-qualified name for the training data artifact
+        type: str
+      rf_config:
+        description: JSON blurb containing the configuration for the decision tree passed to sk-learn
+        type: str
+      output_artifact:
+        description: Name for the artifact to use for the model export. Use "null" if you do not want to export.
+        type: str
+        default: null
+      random_seed:
+        description: Seed for the random number generator.
+        type: str
+        default: 42
+      val_size:
+        description: Size for the validation set as a fraction of the training set
+        type: number
+        default: 0.25
+      stratify_by:
+        description: "Name of a column to be used for stratified sampling. Default: 'null', i.e., no stratification"
+        type: str
+        default: null
+      max_tfidf_features:
+        description: Maximum number of words to consider for the TFIDF
+        type: string
+      save_locally:
+        description: Whether or not to save figure to local file
+        type: str
+        default: True
+    command: >-
+      python run.py --trainval_artifact {trainval_artifact} \
+                    --rf_config {rf_config} \
+                    --output_artifact {output_artifact} \
+                    --random_seed {random_seed} \
+                    --val_size {val_size} \
+                    --stratify_by {stratify_by} \
+                    --max_tfidf_features {max_tfidf_features}\
+                    --save_locally {save_locally}
