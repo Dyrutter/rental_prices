@@ -96,7 +96,7 @@ def process_name(df):
         reshape_to_1d,
         TfidfVectorizer(
             binary=False,
-            max_features=args.tfidf_max_features,
+            max_features=int(args.tfidf_max_features),
             stop_words='english'
         ),
     )
@@ -181,7 +181,7 @@ def process_host(df):
         CountVectorizer(
             ngram_range=(2, 3),
             analyzer="char",
-            max_features=args.grams_max_features))
+            max_features=int(args.grams_max_features)))
 
     # Squeeze name column series to a scalar & transform using tf_idf
     # Returned type is scipy sparse matrix, so must use toarray()
@@ -212,7 +212,7 @@ def process_neigh(df):
         CountVectorizer(
             ngram_range=(2, 3),
             analyzer="char",
-            max_features=args.grams_max_features))
+            max_features=int(args.grams_max_features)))
 
     # Squeeze name column series to a scalar & transform using tf_idf
     # Returned type is scipy sparse matrix, so must use toarray()
@@ -297,11 +297,12 @@ def engineer_pipe(df):
     """
     Full engineer pipeline
     """
-    logger.info("Dropping outliers")
-    df = drop_outliers(df)
-
     logger.info("Processing dates")
     df = process_dates(df)
+    df = impute_dates(df)
+
+    logger.info("Dropping outliers")
+    df = drop_outliers(df)
 
     logger.info("Processing coordinates")
     df = process_coordinates(df)
@@ -325,7 +326,7 @@ def engineer_pipe(df):
         logger.info("Dropping host_name")
         df = df.drop(['host_name'], axis=1)
 
-    if args.use_neigh:
+    if args.use_neighbourhood:
         logger.info("Processing neighbourhood")
         df = process_neigh(df)
     else:
@@ -335,12 +336,12 @@ def engineer_pipe(df):
     return df
 
 
-def go():
+def go(args):
     # Instantiate wandb run and get train data artifact
     run = wandb.init(job_type="engineer_data")
     logger.info("Downloading and reading artifact")
     artifact = run.use_artifact(
-        args.engineer_input_artifact, type='train_data')
+        args.engineer_input_artifact, type='segregated_data')
     artifact_path = artifact.file()
     df = pd.read_csv(artifact_path, low_memory=False)
 
@@ -365,7 +366,7 @@ def go():
         # Create artifact and upload to wandb
         artifact = wandb.Artifact(
             name=args.engineer_output_artifact,
-            type=args.engineer_output_type,
+            type=args.engineer_artifact_type,
             description="csv file of engineered training data",
         )
         artifact.add_file(temp_path)
@@ -489,3 +490,4 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    go(args)
