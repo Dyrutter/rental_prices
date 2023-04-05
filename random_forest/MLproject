@@ -29,16 +29,16 @@ entry_points:
       max_tfidf_features:
         description: Maximum number of words to consider for the TFIDF
         type: string
-      save_locally:
+      save_model_locally:
         description: Whether or not to save figure to local file
         type: str
         default: True
     command: >-
-      python run.py --trainval_artifact {trainval_artifact} \
+      python forest.py --trainval_artifact {trainval_artifact} \
                     --rf_config {rf_config} \
                     --output_artifact {output_artifact} \
                     --random_seed {random_seed} \
                     --val_size {val_size} \
                     --stratify_by {stratify_by} \
                     --max_tfidf_features {max_tfidf_features}\
-                    --save_locally {save_locally}
+                    --save_model_locally {save_locally}
