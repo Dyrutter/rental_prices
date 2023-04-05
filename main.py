@@ -136,8 +136,8 @@ def go(config: DictConfig):
                 "stratify_by": config["data"]["stratify_by"],
                 "max_tfidf_features":
                 config["random_forest_pipeline"]["max_tfidf_features"],
-                "save_locally":
-                config["random_forest_pipeline"]["save_locally"]})
+                "save_model_locally":
+                config["random_forest_pipeline"]["save_model_locally"]})
 
     if "test_regression_model" in steps_to_execute:
         _ = mlflow.run(
