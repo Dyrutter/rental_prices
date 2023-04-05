@@ -80,14 +80,14 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + Engineers dates to date feature
 + Uploads engineered train data to Weights and Biases
 
-### [run.py (random_forest component)](./random_forest/run.py)
-+ Fits data to a random forest inference pipeline
-+ Creates a scikit-learn chart of feature importances
+### [forest.py (random_forest component)](./random_forest/run.py)
++ Fits data to a random forest model
++ Creates a graph of feature importances
 + Uploads model as an artifact to Weights and Biases
 
 ### [run.py (test_regression_model component)](./test_regression_model/run.py)
 + Retrieves model artifact from Weights and Biases
-+ Calculates R squared score and mean absolute error
++ Calculates R squared score and mean absolute error on test data set
 + Uploads scores to Weights and Biases
 
 ### [config.yaml](./config/config.yaml)
