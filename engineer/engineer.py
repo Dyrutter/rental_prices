@@ -283,13 +283,16 @@ def drop_outliers(df):
 
 def scale(df):
     """
+    Make data more normally distributed, then apply Min-Max scaler
     Apply normalization using MinMaxScaler
-    Data is NOT in a gaussian distribution, so don't standardize
     """
-    columns = df.columns
+    # Apply log(1+X) transformation to all elements
+    df["price"] = np.log1p(df["price"])
+
+    # Scale using MinMaxScaler
     scaler = MinMaxScaler()
     scaled = scaler.fit_transform(df)
-    df = pd.DataFrame(scaled, columns=columns)
+    df = pd.DataFrame(scaled, columns=df.columns)
     return df
 
 
