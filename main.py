@@ -100,9 +100,6 @@ def go(config: DictConfig):
                 "save_engineered_locally":
                 config["data"]["save_engineered_locally"],
                 "tfidf_max_features": config["data"]["tfidf_max_features"],
-                "grams_max_features": config["data"]["grams_max_features"],
-                "use_host": config["data"]["use_host"],
-                "use_neighbourhood": config["data"]["use_neighbourhood"],
                 "min_date": config["data"]["min_date"],
                 "max_date": config["data"]["max_date"],
                 "min_nights": config["data"]["min_nights"],
