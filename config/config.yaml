@@ -30,8 +30,6 @@ data:
   save_clean_locally: True
   save_split_locally: True
   save_engineered_locally: True
-  use_host: False
-  use_neighbourhood: False
   split_artifact_root: "data"
   tfidf_max_features: 10
   sample: "sample1.csv" 
@@ -50,8 +48,7 @@ data:
   min_nights: 0
   max_nights: 1250 # Highest is 1250
   min_listings: 1
-  max_listings: 5
-  grams_max_features: 300
+  max_listings: 330 # 95th is 14, but there are several values at 327
 random_forest_pipeline:
   random_forest:
     n_estimators: 100
