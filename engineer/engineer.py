@@ -1,19 +1,16 @@
 import argparse
 import tempfile
-# import itertools
-# import setuptools
-# import yaml
 import logging
 import os
 from distutils.util import strtobool
-# import shutil
 import wandb
+import scipy
 import pandas as pd
 import numpy as np
 from sklearn.pipeline import make_pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
-from sklearn.preprocessing import FunctionTransformer, MinMaxScaler
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sklearn.impute import SimpleImputer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
@@ -165,95 +162,48 @@ def process_group(data_frame):
     return data_frame
 
 
-def process_host(df):
+def process_numerics(df):
     """
-    Apply Count Vectorizer to 'host_name', b/c looking at
-        n-grams is the most effective way to analyze single names
+    Impute values in numeric columns "minimum_nights", "number_of_reviews",
+    "calculated_host_listings_count", and "availability_365"
+    Also, apply Box-Cox transformations to address skew
     """
-    reshape_to_1d = FunctionTransformer(np.reshape,
-                                        kw_args={"newshape": -1},
-                                        feature_names_out='one-to-one')
-
-    # make pipeline that imputes, reshapes, and vectorizes
-    host_grams = make_pipeline(
-        SimpleImputer(strategy="constant", fill_value=""),
-        reshape_to_1d,
-        CountVectorizer(
-            ngram_range=(2, 3),
-            analyzer="char",
-            max_features=int(args.grams_max_features)))
-
-    # Squeeze name column series to a scalar & transform using tf_idf
-    # Returned type is scipy sparse matrix, so must use toarray()
-    host_col = pd.Series(df['host_name']).squeeze().values.reshape(-1, 1)
-    host_vect = host_grams.fit_transform(host_col).toarray()
-    host_df = pd.DataFrame(
-        host_vect,
-        columns=['Host_' + str(i + 1) for i in range(host_vect.shape[1])])
-
-    df = pd.concat([df, host_df], axis=1).reindex(df.index)
-    df = df.drop(['host_name'], axis=1)
-    return df
-
-
-def process_neigh(df):
-    """
-    Apply Count Vectorizer to 'neighbourhood', b/c looking at
-    n-grams is the most effective way to analyze single names
-    """
-    reshape_to_1d = FunctionTransformer(np.reshape,
-                                        kw_args={"newshape": -1},
-                                        feature_names_out='one-to-one')
-
-    # make pipeline that imputes, reshapes, and vectorizes
-    neigh_grams = make_pipeline(
-        SimpleImputer(strategy="constant", fill_value=""),
-        reshape_to_1d,
-        CountVectorizer(
-            ngram_range=(2, 3),
-            analyzer="char",
-            max_features=int(args.grams_max_features)))
-
-    # Squeeze name column series to a scalar & transform using tf_idf
-    # Returned type is scipy sparse matrix, so must use toarray()
-    neigh_col = pd.Series(df['neighbourhood']).squeeze().values.reshape(-1, 1)
-    neigh_vect = neigh_grams.fit_transform(neigh_col).toarray()
-
-    neigh_df = pd.DataFrame(
-        neigh_vect,
-        columns=['neigh_' + str(i + 1) for i in range(neigh_vect.shape[1])])
-    df = pd.concat([df, neigh_df], axis=1).reindex(df.index)
-    df = df.drop(['neighbourhood'], axis=1)
-    return df
-
-
-def impute_numerics(df):
-    """
-    Impute missing values in numeric columns "minimum_nights",
-    "number_of_reviews", and "availability_365"
-    """
-    # Impute "minimum nights" Highly-skewed, so use median
+    # Impute "minimum nights"
     imputer = SimpleImputer(strategy="median")
     col = np.array(df["minimum_nights"]).reshape(-1, 1)
     imputed_col = imputer.fit_transform(col)
     df["minimum_nights"] = imputed_col
 
     # Impute "calculated_host_listings_count"
-    imputer = SimpleImputer(strategy="most_frequent")
+    imputer = SimpleImputer(strategy="median")
     col = np.array(df["calculated_host_listings_count"]).reshape(-1, 1)
     imputed_col = imputer.fit_transform(col)
     df["calculated_host_listings_count"] = imputed_col
 
-    # Impute "availability_365. 20.4% are zeroes
+    # Impute "availability_365"
     imputer = SimpleImputer(strategy="most_frequent")
     col = np.array(df["availability_365"]).reshape(-1, 1)
     imputed_col = imputer.fit_transform(col)
     df["availability_365"] = imputed_col
 
+    # Impute "number_of_reviews"
     imputer = SimpleImputer(strategy="most_frequent")
     col = np.array(df['number_of_reviews']).reshape(-1, 1)
     imputed_col = imputer.fit_transform(col)
     df['number_of_reviews'] = imputed_col
+
+    # Use Box-cox transformation on skewed numeric features
+    numeric_feats = ['minimum_nights', 'number_of_reviews',
+                     'calculated_host_listings_count', 'availability_365']
+    skewed_feats = df[numeric_feats].apply(
+        lambda x: scipy.stats.skew(x)).sort_values(ascending=False)
+    skewness = pd.DataFrame({'Skew': skewed_feats})
+    skewness = skewness[abs(skewness) > 0.75]
+
+    skewed_features = skewness.index
+    lam = 0.15
+    for feat in skewed_features:
+        df[feat] = scipy.special.boxcox1p(df[feat], lam)
     return df
 
 
@@ -283,14 +233,14 @@ def drop_outliers(df):
 
 def scale(df):
     """
-    Make data more normally distributed, then apply Min-Max scaler
-    Apply normalization using MinMaxScaler
+    Make data more normally distributed with logarithmic transformation,
+    Standardize with StandardScaler
     """
     # Apply log(1+X) transformation to all elements
     df["price"] = np.log1p(df["price"])
 
-    # Scale using MinMaxScaler
-    scaler = MinMaxScaler()
+    # Scale using StandardScaler
+    scaler = StandardScaler()
     scaled = scaler.fit_transform(df)
     df = pd.DataFrame(scaled, columns=df.columns)
     return df
@@ -319,22 +269,14 @@ def engineer_pipe(df):
     logger.info("Processing neighbourhood_group")
     df = process_group(df)
 
-    logger.info("Imputing numeric features")
-    df = impute_numerics(df)
+    logger.info("Processing numeric features")
+    df = process_numerics(df)
 
-    if args.use_host:
-        logger.info("Processing host_name")
-        df = process_host(df)
-    else:
-        logger.info("Dropping host_name")
-        df = df.drop(['host_name'], axis=1)
+    logger.info("Dropping host_name")
+    df = df.drop(['host_name'], axis=1)
+    logger.info("Dropping neighbourhood")
+    df = df.drop(['neighbourhood'], axis=1)
 
-    if args.use_neighbourhood:
-        logger.info("Processing neighbourhood")
-        df = process_neigh(df)
-    else:
-        logger.info("Dropping neighbourhood")
-        df = df.drop(['neighbourhood'], axis=1)
     df = scale(df)
     return df
 
@@ -411,28 +353,9 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--grams_max_features",
-        type=float,
-        help="maximum features to use in CountVectorizer",
-        required=True)
-
-    parser.add_argument(
         "--engineer_artifact_type",
         type=str,
         help="Type of the produced artifact",
-        required=True
-    )
-
-    parser.add_argument(
-        "--use_host",
-        type=lambda x: bool(strtobool(x)),
-        help='Choose whether to use the host_name feature',
-        required=True
-    )
-    parser.add_argument(
-        "--use_neighbourhood",
-        type=lambda x: bool(strtobool(x)),
-        help='Choose whether to use the neighbourhood feature',
         required=True
     )
 
@@ -467,14 +390,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--min_listings",
         type=float,
-        help="minimum listings lower param",
+        help="minimum calculated_host_listings_count lower param",
         required=True
     )
 
     parser.add_argument(
         "--max_listings",
         type=float,
-        help="minimum listings upper param",
+        help="minimum calculated_host_listings_count upper param",
         required=True
     )
 
