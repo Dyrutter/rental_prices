@@ -51,10 +51,10 @@ def go(config: DictConfig):
             parameters={
                 "downloaded_raw_data": config["data"]["raw_data_artifact"]})
 
-    # if "EDA" in steps_to_execute:
-    #   _ = mlflow.run(
-    #      os.path.join(root_path, "EDA"),
-    #      entry_point="main")
+    if "EDA" in steps_to_execute:
+        _ = mlflow.run(
+            os.path.join(root_path, "EDA"),
+            entry_point="main")
 
     if "basic_cleaning" in steps_to_execute:
         _ = mlflow.run(
@@ -76,24 +76,13 @@ def go(config: DictConfig):
                 "sample_artifact": config["data"]["preprocessed_data_latest"],
                 "kl_threshold": config["data"]["kl_threshold"]})
 
-    if "segregate" in steps_to_execute:
-        _ = mlflow.run(
-            os.path.join(root_path, "segregate"),
-            entry_point="main",
-            parameters={
-                "input_artifact": config["data"]["preprocessed_data_latest"],
-                "split_artifact_root": config["data"]["split_artifact_root"],
-                "artifact_type": "segregated_data",
-                "test_size": config["data"]["test_size"],
-                "stratify": config["data"]["stratify"],
-                "save_split_locally": config["data"]["save_split_locally"]})
-
     if "engineer" in steps_to_execute:
         _ = mlflow.run(
             os.path.join(root_path, "engineer"),
             entry_point="main",
             parameters={
-                "engineer_input_artifact": config["data"]["train_data"],
+                "engineer_input_artifact":
+                config["data"]["preprocessed_data_latest"],
                 "engineer_output_artifact": config["data"]["engineered_data"],
                 "engineer_artifact_type":
                 config["data"]["engineer_artifact_type"],
@@ -108,6 +97,18 @@ def go(config: DictConfig):
                 "max_listings": config["data"]["max_listings"],
                 "min_price": config["data"]["min_price"],
                 "max_price": config["data"]["max_price"]})
+
+    if "segregate" in steps_to_execute:
+        _ = mlflow.run(
+            os.path.join(root_path, "segregate"),
+            entry_point="main",
+            parameters={
+                "input_artifact": config["data"]["engineer_output_artifact"],
+                "split_artifact_root": config["data"]["split_artifact_root"],
+                "artifact_type": "segregated_data",
+                "test_size": config["data"]["test_size"],
+                "stratify": config["data"]["stratify"],
+                "save_split_locally": config["data"]["save_split_locally"]})
 
     if "random_forest" in steps_to_execute:
         # NOTE: we need to serialize the random forest configuration into JSON
