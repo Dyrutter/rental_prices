@@ -68,10 +68,6 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + Downloads raw data artifact from Weights and Biases
 + Runs y data profiling (formerly pandas_profiling) analysis
 
-### [run.py (segregate component)](./segregate/run.py)
-+ Splits data into train and test sets
-+ Uploads data sets as artifacts to Weights and Biases
-
 ### [engineer.py (engineer component)](./engineer/engineer.py)
 + Imputes missing values
 + Vectorizes 'name' column
@@ -79,6 +75,10 @@ The integrity of each commit is confirmed through GitHub Actions via Pytest and 
 + Drops outliers specified in [hydra config file](./config/config.yaml)
 + Engineers dates to date feature
 + Uploads engineered train data to Weights and Biases
+
+### [run.py (segregate component)](./segregate/run.py)
++ Splits data into train and test sets
++ Uploads data sets as artifacts to Weights and Biases
 
 ### [forest.py (random_forest component)](./random_forest/run.py)
 + Fits data to a random forest model
