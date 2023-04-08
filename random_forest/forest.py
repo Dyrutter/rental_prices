@@ -42,6 +42,7 @@ def go(args):
     y = X.pop("price")
 
     # Log minimum and maximum prices
+    logger.info(f"Final df shape is {X.shape}")
     logger.info(f"Minimum price: {y.min()}, Maximum price: {y.max()}")
 
     # Split data into train and validation sets
@@ -49,7 +50,6 @@ def go(args):
         X,
         y,
         test_size=args.val_size,
-        stratify=X[args.stratify_by] if args.stratify_by != "null" else None,
         random_state=args.random_seed,
         shuffle=True)
 
