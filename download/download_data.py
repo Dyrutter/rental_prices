@@ -15,6 +15,7 @@ def go(args):
     # the available memory. Named temporary file gets destroyed at end so
     # nothing is left behind and the file gets removed even in case of errors
     logger.info(f"Downloading {args.file_url} ...")
+    data_filename = os.path.join(os.getcwd(), f"{args.artifact_name}.csv")
     with tempfile.NamedTemporaryFile(mode='wb+') as fp:
         logger.info("Creating run")
         with wandb.init(job_type="download_data") as run:
@@ -32,7 +33,17 @@ def go(args):
             artifact.add_file(fp.name, name=basename)
             logger.info("Logging artifact")
             run.log_artifact(artifact)
+            if args.save_split_locally is True:
+                df2 = df.copy()
+                df2.to_csv(os.path.join(
+                    curr_dir, f"{args.artifact_name}.csv"))
             artifact.wait()
+
+    with wandb.init(job_type='download_data') as run:
+        artifact = run.use_artifact(args.artifact_name)
+        artifact_path = artifact.file()
+        df = pd.read_csv(artifact_path, low_memory=False)
+        df.to_csv(data_filename)
 
 
 if __name__ == "__main__":
