@@ -4,6 +4,8 @@ import pathlib
 import wandb
 import requests
 import tempfile
+import os
+import pandas as pd
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
 
@@ -33,10 +35,6 @@ def go(args):
             artifact.add_file(fp.name, name=basename)
             logger.info("Logging artifact")
             run.log_artifact(artifact)
-            if args.save_split_locally is True:
-                df2 = df.copy()
-                df2.to_csv(os.path.join(
-                    curr_dir, f"{args.artifact_name}.csv"))
             artifact.wait()
 
     with wandb.init(job_type='download_data') as run:
