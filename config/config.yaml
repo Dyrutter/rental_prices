@@ -8,10 +8,11 @@ main:
     - test_raw_data
     - basic_cleaning 
     - check_data
+    - engineer
     - segregate
     - random_forest
     - test_regression_model
-    - EDA
+    #- EDA
   random_seed: 42
 data:
   file_url: "https://github.com/Dyrutter/rental_prices/blob/main/data/sample1.csv?raw=True" # Path to data file
@@ -25,8 +26,7 @@ data:
   engineer_artifact_type: "engineered_data"
   preprocessed_data_latest: "preprocessed_data.csv:latest"
   engineer_input_artifact: "data_train.csv:latest"
-  engineer_output_artifact: "engineered_data.csv"
-  save_locally: True # raw data
+  engineer_output_artifact: "engineered_data.csv:latest"
   save_clean_locally: True
   save_split_locally: True
   save_engineered_locally: True
@@ -35,12 +35,12 @@ data:
   sample: "sample1.csv" 
   eda_sample: "sample1.csv"
   train_data: "data_train.csv:latest" # Output of segregate step
-  test_data: "data_test.csv" # Output of segregate step
+  test_data: "data_test.csv:latest" # Output of segregate step
   kl_threshold: 0.05
   test_size: 0.2
   val_size: 0.3
-  stratify_by: neighbourhood_group
-  stratify: neighbourhood_group
+  stratify_by: null
+  stratify: null
   min_date: 0
   max_date: 3475 #50 is 85th percentile, 3475 is max
   min_price: 0 #10 is minimum, 40 is 5th%
