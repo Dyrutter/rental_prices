@@ -166,7 +166,7 @@ def process_numerics(df):
     """
     Impute values in numeric columns "minimum_nights", "number_of_reviews",
     "calculated_host_listings_count", and "availability_365"
-    Also, apply Box-Cox transformations to address skew
+    Also, apply Box-Cox transformations to address skewed features
     """
     # Impute "minimum nights"
     imputer = SimpleImputer(strategy="median")
@@ -193,9 +193,8 @@ def process_numerics(df):
     df['number_of_reviews'] = imputed_col
 
     # Use Box-cox transformation on skewed numeric features
-    numeric_feats = ['minimum_nights', 'number_of_reviews',
-                     'calculated_host_listings_count', 'availability_365']
-    skewed_feats = df[numeric_feats].apply(
+    num_feats = ['minimum_nights', 'number_of_reviews', 'availability_365']
+    skewed_feats = df[num_feats].apply(
         lambda x: scipy.stats.skew(x)).sort_values(ascending=False)
     skewness = pd.DataFrame({'Skew': skewed_feats})
     skewness = skewness[abs(skewness) > 0.75]
@@ -236,7 +235,7 @@ def scale(df):
     Make data more normally distributed with logarithmic transformation,
     Standardize with StandardScaler
     """
-    # Apply log(1+X) transformation to all elements
+    # Apply log(1+X) transformation to labels in order to normalize
     df["price"] = np.log1p(df["price"])
 
     # Scale using StandardScaler
@@ -271,7 +270,7 @@ def engineer_pipe(df):
 
     logger.info("Processing numeric features")
     df = process_numerics(df)
-
+    df.dropna(subset=['price'], inplace=True)
     logger.info("Dropping host_name")
     df = df.drop(['host_name'], axis=1)
     logger.info("Dropping neighbourhood")
@@ -286,7 +285,7 @@ def go(args):
     run = wandb.init(job_type="engineer_data")
     logger.info("Downloading and reading artifact")
     artifact = run.use_artifact(
-        args.engineer_input_artifact, type='segregated_data')
+        args.engineer_input_artifact, type='preprocessed_data')
     artifact_path = artifact.file()
     df = pd.read_csv(artifact_path, low_memory=False)
 
