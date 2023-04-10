@@ -10,6 +10,7 @@ import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from distutils.util import strtobool
 from mlflow.models import infer_signature
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
@@ -20,6 +21,9 @@ logger = logging.getLogger()
 
 
 def go(args):
+    filepath = os.path.join(os.getcwd(), 'model_file')
+    model_fp = os.path.join(filepath, 'rf_model.pkl')
+    figure_fp = os.path.join(filepath, 'rf_feature_importances.png')
     # Instantiate run
     run = wandb.init(job_type="train_random_forest")
     run.config.update(args)
@@ -38,7 +42,7 @@ def go(args):
 
     # Get features and labels
     X = pd.read_csv(trainval_local_path)
-    for_img = X.copy()
+    X = X.drop(['Unnamed: 0.1', 'Unnamed: 0'], axis=1)
     y = X.pop("price")
 
     # Log minimum and maximum prices
@@ -65,6 +69,16 @@ def go(args):
     mae = mean_absolute_error(y_val, y_pred)
     logger.info(f"R2 Score: {r_squared}")
     logger.info(f"MAE: {mae}")
+
+    # Save figure and compressed model to local machine if desired
+    if args.save_model_locally is True:
+        if not os.path.isdir(filepath):
+            os.umask(0)
+            os.makedirs(filepath)
+        fig_feat_imp = plot_feature_importance(forest, X)
+        fig_feat_imp.savefig(figure_fp)
+        joblib.dump(forest, model_fp, compress=6)
+        logger.info("files saved to local machine")
 
     # Log as metadata in artifact
     rf_config["R2"] = r_squared
@@ -102,31 +116,20 @@ def go(args):
     run.summary['mae'] = mae
 
     # Plot feature importance
-    fig_feat_imp = plot_feature_importance(forest, for_img)
+    fig_feat_imp = plot_feature_importance(forest, X)
 
     # Upload feture importance visualization to wandb
     run.log({"feature_importance": wandb.Image(fig_feat_imp)})
-
-    # Save figure and compressed model to local machine if desired
-    if args.save_model_locally is True:
-        filepath = os.path.join(os.getcwd(), 'model_file')
-        if not os.path.isdir(filepath):
-            os.umask(0)
-            os.makedirs(filepath)
-        fig_feat_imp.savefig('./model_file/rf_feature_importances.png')
-        joblib.dump(forest, './model_file/rf_model.pkl', compress=6)
-        logger.info("files saved to local machine")
 
 
 def plot_feature_importance(model, X):
     """
     Find and graph our model's feature importances.
     Recreate our initial features in three steps:
-        1) Collect the feature importance for all non-nlp features
-        2) Merge all nlp importances into single 'name' feature
-        3) Merge all 'neighbourhood_group' cat variables into a single feature
+    	1) Collect the feature importance for all non-nlp features
+    	2) Merge all nlp importances into single 'name' feature
+    	3) Merge all 'neighbourhood_group' cat variables into a single feature
     Note all importances sum to one, confirming we've used all features
-    Input is a model and data_frame X
     """
     # Separating features into lists to get list of non-nlp and non-cats
     nameless = [col for col in X.columns if "Name_" not in col]
@@ -137,17 +140,17 @@ def plot_feature_importance(model, X):
     # Indexing normal features and summing their importance for reference
     feat_idx = len(feat_names)
     feat_imp = model.feature_importances_[:len(feat_names)]
-    # feat_imp_sum = sum(feat_imp)
-    # print (feat_imp_sum)
+    feat_imp_sum = sum(feat_imp)
+    #print (feat_imp_sum)
 
     # Index and sum NLP feature sum importances across all TF-IDF dimensions
     name_idx = len([col for col in X.columns if "Name_" in col])
     name_imp = sum(model.feature_importances_[feat_idx: feat_idx + name_idx])
-    # print (name_imp)
+    #print (name_imp)
 
     # Sum importance of categorical features into global group cluster
     group_imp = sum(model.feature_importances_[feat_idx + name_idx:])
-    # print (group_imp)
+    #print (group_imp)
 
     # Create new list of all features
     all_feats = feat_names + ["name", "neighbourhood_group"]
@@ -158,11 +161,11 @@ def plot_feature_importance(model, X):
     # Plot importances
     fig_feat_imp, sub_feat_imp = plt.subplots(figsize=(10, 10))
     sub_feat_imp.bar(
-        range(
-            feat_imp.shape[0]),
+    range(
+        feat_imp.shape[0]),
         feat_imp,
         color="r",
-        align="center")
+         align="center")
     _ = sub_feat_imp.set_xticks(range(feat_imp.shape[0]))
     _ = sub_feat_imp.set_xticklabels(np.array(all_feats), rotation=90)
     fig_feat_imp.tight_layout()
@@ -224,10 +227,9 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--save_model_locally",
-        type=str,
-        help="Set to true if you want to save figures in local folder",
-        required=False,
-        default=True,
+        type=lambda x: bool(strtobool(x)),
+        help='Choose whether to save model and image to a local folder',
+        required=True
     )
 
     args = parser.parse_args()
