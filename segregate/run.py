@@ -19,7 +19,8 @@ def go(args):
     logger.info("Downloading and reading artifact")
     artifact = run.use_artifact(args.input_artifact)
     artifact_path = artifact.file()
-    df = pd.read_csv(artifact_path, low_memory=False)
+    # Remember to pass index_col argument to prevent creating a new column
+    df = pd.read_csv(artifact_path, low_memory=False, index_col=[0])
 
     # Split in model_dev/test, then divide model_dev in train and validation
     logger.info("Splitting data into train, val and test")
