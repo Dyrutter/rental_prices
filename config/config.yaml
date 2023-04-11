@@ -52,7 +52,7 @@ data:
 random_forest_pipeline:
   random_forest:
     n_estimators: 100
-    criterion: 'absolute_error'
+    criterion: 'squared_error'
     max_depth: 15
     min_samples_split: 4
     min_samples_leaf: 3
