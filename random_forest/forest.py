@@ -41,8 +41,8 @@ def go(args):
         args.trainval_artifact).file()
 
     # Get features and labels
-    X = pd.read_csv(trainval_local_path)
-    X = X.drop(['Unnamed: 0.1', 'Unnamed: 0'], axis=1)
+    X = pd.read_csv(trainval_local_path, index_col=[0])
+    print(X.columns)
     y = X.pop("price")
 
     # Log minimum and maximum prices
@@ -126,9 +126,9 @@ def plot_feature_importance(model, X):
     """
     Find and graph our model's feature importances.
     Recreate our initial features in three steps:
-    	1) Collect the feature importance for all non-nlp features
-    	2) Merge all nlp importances into single 'name' feature
-    	3) Merge all 'neighbourhood_group' cat variables into a single feature
+        1) Collect the feature importance for all non-nlp features
+        2) Merge all nlp importances into single 'name' feature
+        3) Merge all 'neighbourhood_group' cat variables into a single feature
     Note all importances sum to one, confirming we've used all features
     """
     # Separating features into lists to get list of non-nlp and non-cats
@@ -140,17 +140,17 @@ def plot_feature_importance(model, X):
     # Indexing normal features and summing their importance for reference
     feat_idx = len(feat_names)
     feat_imp = model.feature_importances_[:len(feat_names)]
-    feat_imp_sum = sum(feat_imp)
-    #print (feat_imp_sum)
+    # feat_imp_sum = sum(feat_imp)
+    # print (feat_imp_sum)
 
     # Index and sum NLP feature sum importances across all TF-IDF dimensions
     name_idx = len([col for col in X.columns if "Name_" in col])
     name_imp = sum(model.feature_importances_[feat_idx: feat_idx + name_idx])
-    #print (name_imp)
+    # print (name_imp)
 
     # Sum importance of categorical features into global group cluster
     group_imp = sum(model.feature_importances_[feat_idx + name_idx:])
-    #print (group_imp)
+    # print (group_imp)
 
     # Create new list of all features
     all_feats = feat_names + ["name", "neighbourhood_group"]
@@ -161,11 +161,11 @@ def plot_feature_importance(model, X):
     # Plot importances
     fig_feat_imp, sub_feat_imp = plt.subplots(figsize=(10, 10))
     sub_feat_imp.bar(
-    range(
-        feat_imp.shape[0]),
+        range(
+            feat_imp.shape[0]),
         feat_imp,
         color="r",
-         align="center")
+        align="center")
     _ = sub_feat_imp.set_xticks(range(feat_imp.shape[0]))
     _ = sub_feat_imp.set_xticklabels(np.array(all_feats), rotation=90)
     fig_feat_imp.tight_layout()
