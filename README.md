@@ -13,7 +13,7 @@ The pipeline has 9 components:
 + Data Segregation (Splitting into train and test sets)
 + Engineering features to create a final data set
 + Create a Random Forest model using engineered data set
-+ Test the model's performance metrics & produce analytic images
++ Test the model's performance on test data set
 
 Each component can be run independently, assuming its previous component(s) have been run at least once.
 The integrity of each commit is confirmed through GitHub Actions via Pytest and flake8
