@@ -27,18 +27,18 @@ def go(args):
     test_dataset_path = run.use_artifact(args.test_dataset).file()
 
     # Read test dataset & split into features and labels
-    df = pd.read_csv(test_dataset_path, low_memory=False)
+    df = pd.read_csv(test_dataset_path, low_memory=False, index_col=[0])
     X_test = df.copy()
     y_test = X_test.pop("price")
 
     # Load model and get predictions
     logger.info("Loading model and performing inference on test set")
-    sk_pipe = mlflow.sklearn.load_model(model_local_path)
-    y_pred = sk_pipe.predict(X_test)
+    forest = mlflow.sklearn.load_model(model_local_path)
+    y_pred = forest.predict(X_test)
 
     # Get r-squared score and mean absolute error
     logger.info("Scoring")
-    r_squared = sk_pipe.score(X_test, y_test)
+    r_squared = forest.score(X_test, y_test)
     mae = mean_absolute_error(y_test, y_pred)
     logger.info(f"Score: {r_squared}")
     logger.info(f"MAE: {mae}")
