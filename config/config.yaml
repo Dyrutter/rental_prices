@@ -1,73 +1,725 @@
-main:
-  download_repository: "https://github.com/Dyrutter/rental_prices#download" 
-  #src_repository: "https://github.com/udacity/build-ml-pipeline-for-short-term-rental-prices#src" 
-  project_name: rental_prices
-  experiment_name: development
-  execute_steps:
-    - download
-    - test_raw_data
-    - basic_cleaning 
-    - check_data
-    - engineer
-    - segregate
-    - random_forest
-    - test_regression_model
-    #- EDA
-  random_seed: 42
-data:
-  file_url: "https://github.com/Dyrutter/rental_prices/blob/main/data/sample1.csv?raw=True" # Path to data file
-  reference_dataset: "rental_prices/preprocessed_data.csv:latest"
-  raw_data_name: "raw_data.csv"
-  raw_data_type: "raw_data"
-  raw_data_description: "Raw file as downloaded"
-  raw_data_artifact: "raw_data.csv:latest"
-  preprocessed_data: "preprocessed_data.csv"
-  engineered_data: "engineered_data.csv"
-  engineer_artifact_type: "engineered_data"
-  preprocessed_data_latest: "preprocessed_data.csv:latest"
-  engineer_input_artifact: "data_train.csv:latest"
-  engineer_output_artifact: "engineered_data.csv:latest"
-  save_clean_locally: True
-  save_split_locally: True
-  save_engineered_locally: True
-  split_artifact_root: "data"
-  tfidf_max_features: 10
-  sample: "sample1.csv" 
-  eda_sample: "sample1.csv"
-  train_data: "data_train.csv:latest" # Output of segregate step
-  test_data: "data_test.csv:latest" # Output of segregate step
-  kl_threshold: 0.05
-  test_size: 0.2
-  val_size: 0.3
-  stratify_by: null
-  stratify: null
-  min_date: 0
-  max_date: 3475 #50 is 85th percentile, 3475 is max
-  min_price: 0 #10 is minimum, 40 is 5th%
-  max_price: 350 #1000 is max, 350 is 95th%
-  min_nights: 0
-  max_nights: 1250 # Highest is 1250
-  min_listings: 1
-  max_listings: 330 # 95th is 14, but there are several values at 327
-random_forest_pipeline:
-  random_forest:
-    n_estimators: 100
-    criterion: 'squared_error'
-    max_depth: 15
-    min_samples_split: 4
-    min_samples_leaf: 3
-    min_weight_fraction_leaf: 0.0
-    max_features: 0.5 #'sqrt'
-    max_leaf_nodes: null
-    bootstrap: true
-    oob_score: true
-    n_jobs: -1
-    random_state: 42
-    verbose: 0
-    warm_start: false
-    ccp_alpha: 0.0
-    max_samples: null
-  max_tfidf_features: 10
-  save_model_locally: True # added this
-  output_artifact: "model_export"
-  export_artifact: "model_export"
+import sys
+#!{sys.executable} -m pip install aequitas==0.42.0 pandas==1.5.2 ####### CODE TO DOWNLOAD A MODULE YOU DON'T ALREADY HAVE
+import timeit # module comes with system
+import pandas as pd
+import numpy as np
+import logging
+import argparse
+import os
+import pathlib
+import hydra
+import scipy
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder, MinMaxScaler, StandardScaler
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.compose import ColumnTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import normalize
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, roc_auc_score
+from sklearn.model_selection import train_test_split, GridSearchCV
+import matplotlib.pyplot as plt
+from sklearn.linear_model import ElasticNet, Lasso,  BayesianRidge, LassoLarsIC
+from sklearn.ensemble import RandomForestRegressor,  GradientBoostingRegressor
+from sklearn.kernel_ridge import KernelRidge
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import RobustScaler
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, clone
+from sklearn.model_selection import KFold, cross_val_score, train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+import xgboost as xgb
+#import lightgbm as lgb
+
+logging.basicConfig(
+    filename='./logging_practice_results.log', #Path to log file
+    level=logging.INFO, #Log info, warnings, errors, and critical errors
+    filemode='a', #Create log file if one doesn't already exist and add to existing log with each run
+    format='%(asctime)s-%(name)s - %(levelname)s - %(message)s', #Format log string
+    datefmt='%d %b %Y %H:%M:%S %Z', #Format date
+    force=True) #Create separate log files, basic_config only configures unconfigured root files
+
+# Access the created logger
+logger = logging.getLogger()
+#logger.info(f"The parameter artifact_name has value {args.artifact_name}") #logs the artifact's name
+filename = '/Users/dylanrutter/Desktop/rental_prices/data/sample1.csv'	
+def read_data(file_path):
+	try:
+		df = pd.read_csv(file_path)
+		logger.info('SUCCESS: Data Frame loaded')
+		return df 
+	except FileNotFoundError  as err:
+		logger.info('ERROR: We were not able to find that file')
+		raise err
+
+def create_folder(foldername):
+	"""
+	Inputs: string name of fosv(file_path) 		
+		logging.info("SUCCESS Your file was successfully read in") #Upper case SUCCESS for readability
+		return dflder to create 
+	Outputs: None, creates a folder in current directory if such a folder doesn't already exist
+	"""
+	current_dir = os.getcwd() # Gets current directory
+	folder_to_create = current_dir + foldername # Creates path of current directory and new folder name
+	if not os.path.isdir(folder_to_create): # Checks if a folder already exists
+		logger.info("Folder doesn't yet exist")
+		os.umask(0) # Makes it so folder can be written to
+		os.makedirs(folder_to_create) # Create folder
+		logger.info('Folder created')
+	else:
+		logger.info('Folder already exists')
+
+def create_file(filename):
+	"""
+	Inputs: string name of file to create
+	Outputs: None, creates a file in current directory if such a file doesn't already exist
+	"""
+	current_dir = os.getcwd()
+	file_to_create = current_dir + filename # Adds strings of current directory and name of new file
+	if not os.path.exists(file_to_create): # checks if file already exists
+		with open(file_to_create, 'w', encoding='utf-8') as f:
+			f.write(filename) # create file (input variable is a string) if it doesn't already exist
+			logger.info('File created')
+			pass
+
+### Keeping records using datetime
+def datetime_record(): 
+	from datetime import datetime
+	source_location = './data_file_name/'
+	filename = 'data_file.csv'
+	output_location = 'records.txt'
+	data = pd.read_csv(source_location + filename)
+	dateTimeObj = datetime.now()
+	current_time = str(dateTimeObj.year) + '/' + str(dateTimeObj.month)+ '/'+str(dateTimeObj.day)
+	allrecords = [source_location, filename, len(data.index), current_time]
+	with open(output_location, 'w') as fp:
+		for element in allrecords:
+			fp.write(str(element))
+
+def timing(filename):
+	starttime = timeit.default_timer()
+	df = read_data(filename)
+	print(df.head())
+	timing = timeit.default_timer() - starttime
+	logger.info(f'Execution took {timing} seconds')
+	print (timing)
+
+df = pd.read_csv('/Users/dylanrutter/Desktop/rental_prices/data/sample1.csv')
+
+def test_price_range(data: pd.DataFrame, min_price, max_price):
+    """
+    Confirm price range is between min_price and max_price
+    """
+    # print (max(list(data["price"])))
+    assert (data["price"].between(min_price, max_price)).all()
+
+def test_proper_boundaries(data: pd.DataFrame):
+    """
+    Test proper longitude and latitude boundaries for
+    properties in and around NYC
+    """
+    idx = data['longitude'].between(
+        -74.25, - 73.50) & data['latitude'].between(40.5, 41.2)
+
+    assert np.sum(~idx) == 0
+
+
+import statsmodels.api as sm
+
+#X_train_2 = sm.add_constant(X_train) 
+#est = sm.OLS(y_train, X_train_2)
+#est2 = est.fit()
+
+#print("summary()\n",est2.summary())
+
+# DRop reviews per month b/c colinear with  last rev & number of revs, also zeroes
+# Drop num reviews b/c missing & colinear w/ rev per month & last review
+# Keep last review
+# Either keep neigh group or lat & long
+# Keep room type
+# Keep calculated_host_listings_count
+
+
+#df = engineer_dates(df)#fix_dates_column(df)
+#df = df.drop(['id', 'host_id', 'reviews_per_month'], axis=1)
+#df = df.drop_duplicates().reset_index(drop=True)
+
+def drop_features(df):
+    """
+    Features chosen for dropping from Pandas profile
+    Drop 'id' and 'host_id" for cardinality
+    Drop 'reviews_per_month' b/c of high correlation
+    """
+    df = df.drop(['id', 'host_id', 'reviews_per_month'], axis=1)
+    return df
+
+
+def drop_useless(df):
+    """
+    Drop duplicates
+    Drop any samples missing the 'price' input
+    """
+    df = df.drop_duplicates().reset_index(drop=True)
+    df.dropna(subset=['price'], inplace=True)
+    return df
+#df = pd.read_csv('/Users/dylanrutter/Desktop/rental_prices/basic_cleaning/basic_data.csv')
+def process_coordinates(data_frame):
+    """
+    Impute missing latitude and longitude values and drop any
+    not in NYC
+    """
+    # Impute latitude values
+    lat_imputer = SimpleImputer(strategy='constant', fill_value=-74.0)
+    lat_col = np.array(data_frame['latitude']).reshape(-1, 1)
+    lat_imputed = lat_imputer.fit_transform(lat_col)
+    data_frame['latitude'] = lat_imputed
+
+    # Impute longitude values
+    long_imputer = SimpleImputer(strategy='constant', fill_value=-74.0)
+    long_col = np.array(data_frame['longitude']).reshape(-1, 1)
+    long_imputed = long_imputer.fit_transform(long_col)
+    data_frame['longitude'] = long_imputed
+
+    # Dropt coordinates not in NYC
+    idx = data_frame['longitude'].between(-74.25, -73.50) &\
+        data_frame['latitude'].between(40.5, 41.2)
+    data_frame = data_frame[idx].copy()
+    return data_frame
+
+
+def process_dates(data_frame):
+    """
+    Convert date column to feature that represents the number of days passed
+    since the last review.
+    Impute missing date values from an old date, because there hasn't been a
+    review for a long time
+    """
+    # Reshape date column for compatability and convert to datetime
+    date_column = np.array(data_frame['last_review']).reshape(-1, 1)
+    date_sanitized = pd.DataFrame(date_column).apply(pd.to_datetime)
+
+    # Convert datetime days to ints & get the distance between them
+    # d.max() is most recent day (2019-07-08) ! d is the date
+    # .dt.days is applied to a date range between start and end dates
+    # returning the difference between both dates in days
+    dates_col = date_sanitized.apply(
+        lambda d: (d.max() - d).dt.days, axis=0).to_numpy()
+    data_frame['last_review'] = dates_col
+
+    return data_frame
+
+def impute_dates(data_frame):
+        # Impute dates and add imputed column to data frame
+    col = np.array(data_frame["last_review"]).reshape(-1, 1)
+    date_imputer = SimpleImputer(strategy='median')
+    dates_imputed = date_imputer.fit_transform(col)
+    data_frame['last_review'] = dates_imputed
+    return data_frame
+
+
+
+def process_name(df):
+    """
+    Impute missing values in 'name' column, then apply TfidfVectorizer
+    Returns a data frame with the original columns alongside new columns
+    for each tf-idf feature
+    For 'host_name' and 'neighbourhood' use Count Vectorizer, b/c looking at
+        n-grams is the most effective way to analyze single names
+    """
+    # Tf-idf accepts only a 1D array, whereas simple imputer only accepts 2D
+    # feature_names_out='one-to-one' determines list of feature names returned
+    # by get_feature_names_out method
+    reshape_to_1d = FunctionTransformer(np.reshape,
+                                        kw_args={"newshape": -1},
+                                        feature_names_out='one-to-one')
+
+    # make pipeline that imputes, reshapes, and vectorizes
+    name_tfidf = make_pipeline(
+        SimpleImputer(strategy="constant", fill_value=""),
+        reshape_to_1d,
+        TfidfVectorizer(
+            binary=False,
+            max_features=10,
+            stop_words='english'
+        ),
+    )
+
+    # Squeeze name column series to a scalar & transform using tf_idf
+    # Returned type is scipy sparse matrix, so must use toarray()
+    name_col = pd.Series(df['name']).squeeze().values.reshape(-1, 1)
+    name_vect = name_tfidf.fit_transform(name_col).toarray()
+
+    # Create a data frame from tf_idf, using "column_x" strings for columns
+    name_df = pd.DataFrame(
+        name_vect,
+        columns=['Name_' + str(i + 1) for i in range(name_vect.shape[1])])
+
+    # Merge name df with main df along columns, reindex for consistent rows
+    df = pd.concat([df, name_df], axis=1).reindex(df.index)
+    df = df.drop(['name'], axis=1)
+    return df
+
+
+def process_room_type(data_frame):
+    """
+    Use an ordianl encoder, because order is meaningful in room_type:
+    'Entire home/apt' > 'Private room' > 'Shared room'
+    Result of OrdinalEncoder is a single column of transformed features
+    Function returns transformed data frame
+    """
+    # Instantiate encoder and imputer
+    encoder = OrdinalEncoder()
+    imputer = SimpleImputer(strategy="most_frequent")
+
+    # Get room type column, impute and encode
+    room_type = np.array(data_frame['room_type']).reshape(-1, 1)
+    imputed = imputer.fit_transform(room_type)
+    encoded = encoder.fit_transform(imputed)
+
+    # Substitute categorical column for encoded column
+    data_frame['room_type'] = encoded
+    return data_frame
+
+
+def process_group(data_frame):
+    """
+    Impute and One-hot encode the categorical feature 'neighbourhood_group'
+    Returns imputed data frame with additional columns of the format:
+        'neighbourhood_group_brooklyn'
+    """
+    # Impute missing values
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(data_frame["neighbourhood_group"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    data_frame["neighbourhood_group"] = imputed_col
+
+    # One Hot encode
+    # Could be an issue here. Might not want to convert from sparse
+    neigh = OneHotEncoder()
+    encoded = neigh.fit_transform(data_frame[['neighbourhood_group']])
+    col_name = neigh.get_feature_names_out(['neighbourhood_group'])
+
+    # Returns a sparse one-hot matrix, so must convert to dense
+    df = pd.DataFrame(encoded.todense(), columns=col_name)
+
+    # Concatenate one-hot df with main df and drop categorical feature
+    data_frame = pd.concat([data_frame, df], axis=1).reindex(df.index)
+    data_frame = data_frame.drop(['neighbourhood_group'], axis=1)
+    return data_frame
+
+
+def process_host(df):
+    """
+    Apply Count Vectorizer to 'host_name', b/c looking at
+        n-grams is the most effective way to analyze single names
+    """
+    reshape_to_1d = FunctionTransformer(np.reshape,
+                                        kw_args={"newshape": -1},
+                                        feature_names_out='one-to-one')
+
+    # make pipeline that imputes, reshapes, and vectorizes
+    host_grams = make_pipeline(
+        SimpleImputer(strategy="constant", fill_value=""),
+        reshape_to_1d,
+        CountVectorizer(
+            ngram_range=(2, 3),
+            analyzer="char",
+            max_features=100))
+
+    # Squeeze name column series to a scalar & transform using tf_idf
+    # Returned type is scipy sparse matrix, so must use toarray()
+    host_col = pd.Series(df['host_name']).squeeze().values.reshape(-1, 1)
+    host_vect = host_grams.fit_transform(host_col).toarray()
+    host_df = pd.DataFrame(
+        host_vect,
+        columns=['Host_' + str(i + 1) for i in range(host_vect.shape[1])])
+
+    df = pd.concat([df, host_df], axis=1).reindex(df.index)
+    df = df.drop(['host_name'], axis=1)
+    return df
+
+
+def process_neigh(df):
+    """
+    Apply Count Vectorizer to 'neighbourhood', b/c looking at
+    n-grams is the most effective way to analyze single names
+    """
+    reshape_to_1d = FunctionTransformer(np.reshape,
+                                        kw_args={"newshape": -1},
+                                        feature_names_out='one-to-one')
+
+    # make pipeline that imputes, reshapes, and vectorizes
+    neigh_grams = make_pipeline(
+        SimpleImputer(strategy="constant", fill_value=""),
+        reshape_to_1d,
+        CountVectorizer(
+            ngram_range=(2, 3),
+            analyzer="char",
+            max_features=100))
+
+    # Squeeze name column series to a scalar & transform using tf_idf
+    # Returned type is scipy sparse matrix, so must use toarray()
+    neigh_col = pd.Series(df['neighbourhood']).squeeze().values.reshape(-1, 1)
+    neigh_vect = neigh_grams.fit_transform(neigh_col).toarray()
+
+    neigh_df = pd.DataFrame(
+        neigh_vect,
+        columns=['neigh_' + str(i + 1) for i in range(neigh_vect.shape[1])])
+    df = pd.concat([df, neigh_df], axis=1).reindex(df.index)
+    df = df.drop(['neighbourhood'], axis=1)
+    return df
+
+
+def process_numerics(df):
+    """
+    Impute missing values in numeric columns "minimum_nights",
+    "number_of_reviews", and "availability_365"
+    """
+    # Impute "minimum nights"
+    imputer = SimpleImputer(strategy="median")
+    col = np.array(df["minimum_nights"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["minimum_nights"] = imputed_col
+    
+    # Impute "calculated_host_listings_count"
+    imputer = SimpleImputer(strategy="median")
+    col = np.array(df["calculated_host_listings_count"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["calculated_host_listings_count"] = imputed_col
+
+    # Impute "availability_365. 20.4% are zeroes
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df["availability_365"]).reshape(-1, 1)
+    imputed_col = imputer.fit_transform(col)
+    df["availability_365"] = imputed_col
+
+    # Impute "number_of_reviews"
+    imputer = SimpleImputer(strategy="most_frequent")
+    col = np.array(df['number_of_reviews']).reshape(-1,1)
+    imputed_col = imputer.fit_transform(col)
+    df['number_of_reviews'] = imputed_col
+
+    numeric_feats = ['minimum_nights', 'number_of_reviews', 'availability_365']
+    # Impute "minimum nights"
+    # Minimum nights is highly skewed, so use Box-cox transformation
+    skewed_feats = df[numeric_feats].apply(lambda x: scipy.stats.skew(x)).sort_values(ascending=False)
+    print("\nSkew in numerical features: \n")
+    skewness = pd.DataFrame({'Skew' :skewed_feats})
+
+    skewness = skewness[abs(skewness) > 0.75]
+    print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
+
+
+    skewed_features = skewness.index
+    lam = 0.15
+    for feat in skewed_features:
+        #all_data[feat] += 1
+        df[feat] = scipy.special.boxcox1p(df[feat], lam)
+    return df
+
+
+def drop_outliers(df):
+    """
+    Drop extreme outliers as discovered in y_data profiling
+    """
+    # Drop major outliers from last review, default (0,50)
+    #idx = df['last_review'].between(0, 50)
+    #df = df[idx].copy()
+
+    # Drop outliers for minimum nights stayed, default (0,4)
+    #idx = df['minimum_nights'].between(0, 600)
+    #df = df[idx].copy()
+
+    # Drop major outliers from calculated_host_listings_count, default (1,5)
+    #idx = df['calculated_host_listings_count'].between(1, 5)
+    #df = df[idx].copy()
+
+    # Drop undesired price values, default (0,350)
+    idx = df['price'].between(0, 350)
+    df = df[idx].copy()
+
+    return df
+
+
+def scale(df):
+    """
+    Apply normalization using MinMaxScaler
+    Data is NOT in a gaussian distribution, so don't standardize
+    """
+    from scipy import stats
+    #from scipy.stats import norm, skew
+    #pd.set_option('display.float_format', lambda x: '{:.3f}'.format(x)) #Limiting floats to 3 decimals
+    #We use the numpy fuction log1p which  applies log(1+x) to all elements of the column
+    for col in df.columns:
+    	df[col] = np.log1p(df[col])
+
+    #columns = df.columns
+    scaler = StandardScaler()
+    scaled = scaler.fit_transform(df)
+    df = pd.DataFrame(scaled, columns=df.columns)
+    return df
+
+def engineer_pipe(df):
+    """
+    Full engineer pipeline
+    """
+
+    logger.info("Processing dates")
+    df = drop_features(df)
+    df = drop_useless(df)
+    df = process_dates(df)
+    df = impute_dates(df)
+    #print (df.shape)
+
+    logger.info("Dropping outliers")
+    df = drop_outliers(df)
+    #print (df.shape)
+
+    logger.info("Processing coordinates")
+    df = process_coordinates(df)
+    #print (df.shape)
+
+
+    #logger.info("Processing name")
+    df = process_name(df)
+    #print (df.shape)
+
+    logger.info("Processing room_type")
+    df = process_room_type(df)
+
+    logger.info("Processing neighbourhood_group")
+    df = process_group(df)
+
+    logger.info("Imputing numeric features")
+    df = process_numerics(df)
+    df.dropna(subset=['price'], inplace=True)
+    #print(df['price'].isna().sum())
+    #print (df.shape)
+    #logger.info("Processing host_name")
+   	#df = process_host(df)
+    #else:
+    logger.info("Dropping host_name")
+    df = df.drop(['host_name'], axis=1)
+
+    #if args.use_neigh==True:
+    #logger.info("Processing neighbourhood")
+    #df = process_neigh(df)
+    #else:
+    logger.info("Dropping neighbourhood")
+    df = df.drop(['neighbourhood'], axis=1)
+    df = scale(df)
+    return df
+
+#fig, ax = plt.subplots()
+#ax.scatter(x = df['calculated_host_listings_count'], y = df['price'])
+#plt.ylabel('price', fontsize=13)
+#plt.xlabel('calculated_host_listings_count', fontsize=13)
+#plt.show()
+#df = pd.read_csv('/Users/dylanrutter/Desktop/rental_prices/engineer/engineered_data.csv')
+#df.dropna(subset=['price'], inplace=True)
+#print (df.isna().sum())
+df = engineer_pipe(df)
+"""
+import seaborn as sns
+from scipy import stats
+#from scipy.stats import norm, skew
+pd.set_option('display.float_format', lambda x: '{:.3f}'.format(x)) #Limiting floats to 3 decimals
+#We use the numpy fuction log1p which  applies log(1+x) to all elements of the column
+df["price"] = np.log1p(df["price"])
+
+#Check the new distribution 
+sns.distplot(df['price'] , fit=stats.norm);
+
+# Get the fitted parameters used by the function
+(mu, sigma) = stats.norm.fit(df['price'])
+print( '\n mu = {:.2f} and sigma = {:.2f}\n'.format(mu, sigma))
+
+#Now plot the distribution
+plt.legend(['Normal dist. ($\mu=$ {:.2f} and $\sigma=$ {:.2f} )'.format(mu, sigma)],
+            loc='best')
+plt.ylabel('Frequency')
+plt.title('price distribution')
+
+#Get also the QQ-plot
+fig = plt.figure()
+res = stats.probplot(df['price'], plot=plt)
+plt.show()
+
+
+
+#print (df.isna().sum())
+#print (df.dtypes)
+#y = list(df.pop('price')) 
+#X = df
+"""
+
+
+#print (df.shape)
+from scipy import stats
+#from scipy.stats import norm, skew
+#pd.set_option('display.float_format', lambda x: '{:.3f}'.format(x)) #Limiting floats to 3 decimals
+#We use the numpy fuction log1p which  applies log(1+x) to all elements of the column
+#df["price"] = np.log1p(df["price"])
+
+train = pd.read_csv('/Users/dylanrutter/Desktop/rental_prices/segregate/data_train.csv')
+test = pd.read_csv('/Users/dylanrutter/Desktop/rental_prices/segregate/data_test.csv')
+
+X = train
+y = list(X.pop("price"))
+
+print (X.shape)
+
+#print (hostless)
+
+features_train, features_test, labels_train, labels_test = train_test_split(X, y,
+        test_size=0.3, random_state=42)
+n_folds = 5
+print (features_train.shape)
+#def rmsle_cv(model):
+#    kf = KFold(n_folds, shuffle=True, random_state=42).get_n_splits(train.values)
+#    rmse= np.sqrt(-cross_val_score(model, train.values, y_train, scoring="neg_mean_squared_error", cv = kf))
+#    return(rmse)
+
+param_grid = [
+  {'max_features': [0.5],
+  'n_estimators': [1000],
+  'random_state': [100],
+  'criterion': ['squared_error'],
+  'max_depth': [15],
+  'min_samples_split': [4],
+  'min_samples_leaf': [3],
+  'bootstrap': [True],
+  'oob_score': [True],
+  'n_jobs': [-1],
+  'warm_start': [False]}]#, 'n_estimators': [100, 200, 300]},
+  #{'max_depth': [10, 15, 20]},
+ #]
+
+model = RandomForestRegressor(n_estimators=1000, random_state=100,
+	criterion='squared_error', max_depth=15, min_samples_split=4,
+	min_samples_leaf=3, max_features=0.5,
+	bootstrap=True, oob_score=True, n_jobs=-1, warm_start=False)
+
+#########model = GridSearchCV(estimator=RandomForestRegressor(), param_grid=param_grid, scoring='r2')
+
+"""
+lasso = make_pipeline(RobustScaler(), Lasso(alpha =0.0005, random_state=1))
+ENet = make_pipeline(RobustScaler(), ElasticNet(alpha=0.0005, l1_ratio=.9, random_state=3))
+
+
+KRR = KernelRidge(alpha=0.6, kernel='polynomial', degree=2, coef0=2.5)
+GBoost = GradientBoostingRegressor(n_estimators=3000, learning_rate=0.05,
+                                   max_depth=4, max_features='sqrt',
+                                   min_samples_leaf=15, min_samples_split=10, 
+                                   loss='huber', random_state =5)
+xgb_model = xgb.XGBRegressor(colsample_bytree=0.4603, gamma=0.0468, 
+                             learning_rate=0.05, max_depth=3, 
+                             min_child_weight=1.7817,
+                             reg_alpha=0.4640, reg_lambda=0.8571,
+                             subsample=0.5213,
+                             objective='reg:squarederror', seed=7,
+                             nthread = -1)
+"""
+"""
+model_lgb = lgb.LGBMRegressor(objective='regression',num_leaves=5,
+                              learning_rate=0.05, n_estimators=720,
+                              max_bin = 55, bagging_fraction = 0.8,
+                              bagging_freq = 5, feature_fraction = 0.2319,
+                              feature_fraction_seed=9, bagging_seed=9,
+                              min_data_in_leaf =6, min_sum_hessian_in_leaf = 11)
+"""
+
+
+#print (features_train.columns)
+########model.fit(features_train, labels_train)
+model.fit(features_train, labels_train)
+#model = model.best_estimator_
+##########print(model.best_params_)
+#print (model.cv_results_)
+
+# Make predictions on test data
+######labels_test = list(test.pop('price')) 
+######features_test = test.drop(['Unnamed: 0.1', 'Unnamed: 0'], axis=1)
+"""
+score = rmsle_cv(lasso)
+print("\nLasso score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+score = rmsle_cv(ENet)
+print("ElasticNet score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+score = rmsle_cv(KRR)
+print("Kernel Ridge score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+score = rmsle_cv(model_xgb)
+print("Xgboost score: {:.4f} ({:.4f})\n".format(score.mean(), score.std()))
+score = rmsle_cv(model_lgb)
+print("LGBM score: {:.4f} ({:.4f})\n" .format(score.mean(), score.std()))
+"""
+###########model = model.best_estimator_
+
+predictions = model.predict(features_test)
+print (predictions.shape)
+r_squared = model.score(features_test, labels_test)
+mae = mean_absolute_error(labels_test, predictions)
+print (r_squared)
+print (mae)
+#errors = abs(predictions - labels_test)
+#print('Metrics for Random Forest Trained on Expanded Data')
+#print('Average absolute error:', round(np.mean(errors), 2), 'degrees.')
+
+
+# Calculate mean absolute percentage error (MAPE)
+#mape = np.mean(100 * (errors / labels_test))
+#print (mape)
+
+def plot_feature_importance(model):
+    """
+    Find and graph our model's feature importances.
+    Recreate our initial features in three steps:
+    	1) Collect the feature importance for all non-nlp features
+    	2) Merge all nlp importances into single 'name' feature
+    	3) Merge all 'neighbourhood_group' cat variables into a single feature
+    Note all importances sum to one, confirming we've used all features
+    """
+    # Separating features into lists to get list of non-nlp and non-cats
+    #print (model.feature_importances_)
+    nameless = [col for col in X.columns if "Name_" not in col]
+    groupless = [feat for feat in nameless if "neighbourhood_" not in feat]
+    neighless = [feat for feat in groupless if "neigh_" not in feat]
+    feat_names = [feat for feat in neighless if "Host_" not in feat]
+
+    # Indexing normal features and summing their importance for reference
+    feat_idx = len(feat_names)
+    feat_imp = model.feature_importances_[:len(feat_names)]
+    feat_imp_sum = sum(feat_imp)
+    #print (feat_imp_sum)
+
+    # Index and sum NLP feature sum importances across all TF-IDF dimensions
+    name_idx = len([col for col in X.columns if "Name_" in col])
+    name_imp = sum(model.feature_importances_[feat_idx: feat_idx + name_idx])
+    #print (name_imp)
+
+    # Sum importance of categorical features into global group cluster
+    group_imp = sum(model.feature_importances_[feat_idx + name_idx:])
+    #print (group_imp)
+
+    # Create new list of all features
+    all_feats = feat_names + ["name", "neighbourhood_group"]
+    # Create new list of all feature importances
+    feat_imp = np.append(feat_imp, name_imp)
+    feat_imp = np.append(feat_imp, group_imp)
+
+    # Plot importances
+    fig_feat_imp, sub_feat_imp = plt.subplots(figsize=(10, 10))
+    sub_feat_imp.bar(
+    range(
+        feat_imp.shape[0]),
+        feat_imp,
+        color="r",
+         align="center")
+    _ = sub_feat_imp.set_xticks(range(feat_imp.shape[0]))
+    _ = sub_feat_imp.set_xticklabels(np.array(all_feats), rotation=90)
+    fig_feat_imp.tight_layout()
+    plt.show()
+    #return fig_feat_imp
+
+plot_feature_importance(model)
