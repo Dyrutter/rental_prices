@@ -235,8 +235,10 @@ def scale(df):
     Make data more normally distributed with logarithmic transformation,
     Standardize with StandardScaler
     """
-    # Apply log(1+X) transformation to labels in order to normalize
+    # Apply log(1+X) transformation in order to normalize
     df["price"] = np.log1p(df["price"])
+    df["availability_365"] = np.log1p(df["availability_365"])
+    df["minimum_nights"] = np.log1p(df["minimum_nights"])
 
     # Scale using StandardScaler
     scaler = StandardScaler()
