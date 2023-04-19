@@ -1,6 +1,5 @@
 main:
-  download_repository: "https://github.com/Dyrutter/rental_prices#download" 
-  #src_repository: "https://github.com/udacity/build-ml-pipeline-for-short-term-rental-prices#src" 
+  download_repository: "https://github.com/Dyrutter/rental_prices#download"  
   project_name: rental_prices
   experiment_name: development
   execute_steps:
