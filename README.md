@@ -1,6 +1,6 @@
 # PROJECT OVERVIEW
 
-This is a demonstration of an MLOps pipeline using MLFLow and Weights & Biases.
+This is an MLOps pipeline using MLFLow and Weights & Biases.
 
 In this example, a property management company is renting rooms and properties for short periods of time on various platforms. I estimate the typical price for a given property based on the price of similar properties. New data is received in bulk on a frequent basis. With each addition, the model is retrained with the same cadence, necessitating an end-to-end pipeline in production.
 
